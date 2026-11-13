@@ -2116,3 +2116,8 @@ animations = [
 # Fixed duration, deliberately NO amf_use_weapon_speed and NO aim/vertical-rotation flags.
 animations.append(["rifle_bolt_cycle_2s", 0, 90|amf_play,
  [2.0, "rifle_bolt_cycle_2s", 0, 60, arf_stick_item_to_left_hand|arf_blend_in_3]])
+
+# R1: static guard only when re-equipping during the original cooldown.
+# No moving frames, no amf_play/restart; bolt_tick releases it at the deadline.
+animations.append(["canakkale_bolt_hold", 0, 90|amf_keep,
+ [2.0, "rifle_bolt_cycle_2s", 60, 60, arf_stick_item_to_left_hand]])

@@ -53,16 +53,26 @@ supporting hand while the right hand cycles the bolt.
 times `1..61` import through OpenBRF as BRF indices **`0..60`**. The module action
 uses `0, 60`; do not include the reference/T pose in the animation resource.
 
-On a rifle attack, `canakkale_rifle_fired` starts a 2000 ms per-agent deadline on
-the server, predicts the local owner's action on a client, and sends server
-message 120 to connected clients. Clients accept that event only from player
-0 (the server); clients cannot set server cooldowns. A duplicate event while a
-cycle is active does not restart it. Normal MP missions reset slots on spawn
-and enforce the upper-body action every frame until the deadline, including
-when a different aim/equip animation interrupts it. At expiry they release the
-bolt action. Captain and single-player mission templates get no added triggers.
+R1 separates the visual action from its 2000 ms per-agent deadline. A new
+accepted shot starts the moving clip **once**. Early callbacks only increment
+the diagnostic counter; the tick never restarts the moving clip, including
+when the reported animation differs. At expiry, one neutral release clears
+owned visual/weapon/deadline state, regardless of the reported action ID.
 
-**Engine verification still required:** the stock animation priority/per-frame
+A wielded-item transition cancels visual ownership immediately on the next
+mission tick. Other weapons then animate normally. The original deadline stays
+intact. Returning to either rifle before it expires enters a **static frame-60
+hold** once per return; it does not play the bolt motion again. That guard is
+released at the original deadline. It has no moving frame range or restart flag.
+
+Server message 120 now carries `(agent_id, server_cycle_stamp)`; deploy the
+same compiled data to server and clients. Clients deduplicate the positive
+opaque stamp even after visual expiry. Owner prediction acknowledgements are
+consumed without replay, including late echoes; a real unpredicted server event
+can still start playback. Spawn resets the state. No client can change the
+server deadline. A server stamp is not interpreted as a client-clock deadline.
+
+**Engine verification still required:** the stock animation priority/static-return
 guard is the implemented fire/aim suppression mechanism. `ti_on_weapon_attack`
 is post-shot and cannot retract a missile that the engine has already emitted.
 Any early attack increments `slot_agent_canakkale_early_shots` (141); a nonzero

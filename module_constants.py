@@ -1677,9 +1677,15 @@ ACHIEVEMENT_POWER_SHIFT = 19,
 ACHIEVEMENT_BOMBERMAN = 20,
 ACHIEVEMENT_LOCK_STOCK_AND_3_SMOKING_BARRELS = 21,
 
-# CANAKKALE-MVP-001. Agent slots 140-141 are unused by the baseline module.
+# CANAKKALE-MVP-001. Agent slots 140-145 are unused by the baseline module.
 slot_agent_canakkale_bolt_until = 140
 slot_agent_canakkale_early_shots = 141
 canakkale_bolt_duration_ms = 2000
 # Last stock server-to-client event is 119 in header_common.py.
 multiplayer_event_canakkale_bolt = 120
+
+# R1: visual ownership (0=none, 1=cycle, 2=static hold), dedupe and wield state.
+slot_agent_canakkale_bolt_visual = 142
+slot_agent_canakkale_bolt_last_event = 143
+slot_agent_canakkale_bolt_weapon = 144
+slot_agent_canakkale_bolt_predictions = 145

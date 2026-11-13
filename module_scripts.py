@@ -8126,7 +8126,26 @@ scripts = [
         (neg|multiplayer_is_server),
         (eq, ":player_no", 0), # only the server can start a remote actor's bolt cycle
         (store_script_param, ":agent_no", 3),
-        (call_script, "script_canakkale_start_bolt", ":agent_no"),
+        (store_script_param, ":stamp", 4),
+        (agent_is_active, ":agent_no"),
+        (agent_get_slot, ":last_event", ":agent_no", slot_agent_canakkale_bolt_last_event),
+        (gt, ":stamp", ":last_event"),
+        (agent_set_slot, ":agent_no", slot_agent_canakkale_bolt_last_event, ":stamp"),
+        (get_player_agent_no, ":local_agent"),
+        (try_begin),
+          (eq, ":agent_no", ":local_agent"),
+          (agent_get_slot, ":predictions", ":agent_no", slot_agent_canakkale_bolt_predictions),
+          (try_begin),
+            (gt, ":predictions", 0),
+            # Acknowledge prediction without replay, even after its expiry.
+            (val_sub, ":predictions", 1),
+            (agent_set_slot, ":agent_no", slot_agent_canakkale_bolt_predictions, ":predictions"),
+          (else_try),
+            (call_script, "script_canakkale_start_bolt", ":agent_no"),
+          (try_end),
+        (else_try),
+          (call_script, "script_canakkale_start_bolt", ":agent_no"),
+        (try_end),
       (else_try),
         ###############
         #SERVER EVENTS#

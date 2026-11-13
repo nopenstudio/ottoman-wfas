@@ -8,7 +8,7 @@ Python distribution. Python 3.12 runs the isolated build orchestrator.
 | Changed Module System/test Python 2 syntax | PASS |
 | Original Module System processor chain | PASS — all 29 processors, exit 0, no ERROR/traceback, **zero compiler warnings** |
 | Source regression suite | PASS — 8 tests |
-| Script operation host/client state harness | PASS — 8 tests; not an engine simulation |
+| Script operation host/client state harness | PASS — 19 tests after R1; not an engine simulation |
 | Old items/IDs, animations/IDs and troop ordering | PASS — compared with base commit |
 | Captain troop records and missions | PASS — unchanged against base commit |
 | Normal faction-filtered AI/player ranges | PASS — one Turkish and one British template each |
@@ -17,7 +17,7 @@ Python distribution. Python 3.12 runs the isolated build orchestrator.
 | Rifle capacity encoded in item records | PASS — 7 for both clones; originals remain 1 |
 | SMD → BRF → SMD private tooling round-trip | PASS — 20 bones, 61 action poses, BRF indices 0–60; maximum equivalent rotation error 1.137e-6 rad; position error 0 |
 | User's installed BRF/material/DDS/module.ini inspection | NOT RUN — local files not accessible here; installation confirmed by user |
-| WFaS client / dedicated-server smoke test | NOT RUN — no WFaS client, server or Wine available in this executor |
+| WFaS client / dedicated-server smoke test | R0 user reported repeated animation/swap failure; R1 local retest NOT RUN — no WFaS client, server or Wine here |
 | Seven real shots, ammo consumption, seventh-shot full reload | NOT RUN — engine acceptance pending |
 | Effective 2 s fire AND aim suppression, AI, interruption and network latency | NOT RUN — script implementation/state tests pass; engine acceptance pending |
 
@@ -63,3 +63,12 @@ local game BRF.
 
 **Delivery status:** source implementation is REVIEW_READY. Runtime acceptance
 is pending; this document does not claim the full playable MVP is proven PASS.
+
+## Runtime rework R1
+
+The reported R0 gameplay failure supersedes the earlier source-only acceptance
+for bolt playback. See [R1 changes and regression evidence](CANAKKALE-R1.md).
+Current regressions: 8 source tests + 19 operation/state tests = **27 PASS**.
+The 29-processor build was rerun with zero compiler warnings.
+R1 in-engine playback, swap cancellation and true fire/aim suppression are
+**NOT RUN / BLOCKED pending the user's recompiled playtest**.

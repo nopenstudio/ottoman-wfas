@@ -114,14 +114,19 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(oldcav,[])
     def test_animation_resource_range_and_lock_flags(self):
         old=baseline('module_animations.py','animations')
-        self.assertEqual(animations[:-1],old)
-        a=animations[-1]
+        self.assertEqual(animations[:-2],old)
+        a=animations[-2]
         self.assertEqual(a[0],'rifle_bolt_cycle_2s')
         self.assertEqual(a[3][:4],[2.0,'rifle_bolt_cycle_2s',0,60])
         self.assertEqual(a[2]&amf_priority_mask,90)
         self.assertFalse(a[2]&amf_use_weapon_speed)
         self.assertFalse(a[1]&acf_rot_vertical_mask)
         self.assertTrue(a[3][4]&arf_stick_item_to_left_hand)
+        hold=animations[-1]
+        self.assertEqual(hold[0],'canakkale_bolt_hold')
+        self.assertEqual(hold[3][1:4],['rifle_bolt_cycle_2s',60,60])
+        self.assertTrue(hold[2]&amf_keep)
+        self.assertFalse(hold[2]&(amf_play|amf_restart))
     def test_only_normal_missions_get_lifecycle_guards(self):
         old=baseline('module_mission_templates.py','mission_templates')
         wanted=set(['multiplayer_dm','multiplayer_tdm','multiplayer_cf','multiplayer_sg','multiplayer_bt','multiplayer_duel'])

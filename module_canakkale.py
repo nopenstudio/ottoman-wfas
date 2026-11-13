@@ -1,9 +1,10 @@
-"""Normal multiplayer bolt-cycle operations (WFaS 1.143, Python 2.7).
+"""One-shot bolt visuals, with an independent 2000 ms rifle cooldown.
 
-No loaded/reserve ammo is written here: the engine owns the seven-shot magazine
-and the normal empty-magazine reload. Animation priority plus a per-frame guard
-is the available stock-engine fire/aim lock. It needs a real client/server test;
-ti_on_weapon_attack is POST-shot and cannot retract an already emitted missile.
+No tick or early-attack path restarts the moving clip. Weapon changes cancel
+its visual ownership, not the deadline. Re-equipping a rifle during the lock
+uses one STATIC end-frame hold, released at the original deadline. These stock
+animation controls still require WFaS verification for actual fire/aim denial;
+the post-projectile attack trigger cannot retract an already emitted missile.
 """
 from header_common import *
 from header_operations import *
@@ -20,12 +21,18 @@ canakkale_scripts = [
             (eq, "$g_multiplayer_is_game_type_captain", 0),
             (store_mission_timer_a_msec, ":now"),
             (agent_get_slot, ":until", ":agent", slot_agent_canakkale_bolt_until),
-            # A predicted owner cycle / duplicate event must not restart the timer.
+            (le, ":until", ":now"),
+            # The only moving-clip start in the whole bolt implementation.
+            (store_add, ":until", ":now", canakkale_bolt_duration_ms),
+            (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, ":until"),
+            (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 0),
+            (agent_get_wielded_item, ":weapon", ":agent", 0),
+            (agent_set_slot, ":agent", slot_agent_canakkale_bolt_weapon, ":weapon"),
             (try_begin),
-                (le, ":until", ":now"),
-                (store_add, ":until", ":now", canakkale_bolt_duration_ms),
-                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, ":until"),
+                (this_or_next|eq, ":weapon", "itm_canakkale_turk_rifle"),
+                (eq, ":weapon", "itm_canakkale_british_rifle"),
                 (agent_set_animation, ":agent", "anim_rifle_bolt_cycle_2s", 1),
+                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 1),
             (try_end),
         (try_end),
     ]),
@@ -43,24 +50,32 @@ canakkale_scripts = [
                 (try_begin),
                     (le, ":until", ":now"),
                     (call_script, "script_canakkale_start_bolt", ":agent"),
+                    # Positive, monotonically increasing per-agent cycle token.
+                    # It is an opaque dedupe token, NOT a client-clock deadline.
+                    (store_add, ":stamp", ":now", 1),
                     (get_max_players, ":players"),
                     (try_for_range, ":player", 1, ":players"),
                         (player_is_active, ":player"),
-                        (multiplayer_send_int_to_player, ":player",
-                         multiplayer_event_canakkale_bolt, ":agent"),
+                        (multiplayer_send_2_int_to_player, ":player",
+                         multiplayer_event_canakkale_bolt, ":agent", ":stamp"),
                     (try_end),
                 (else_try),
-                    # Diagnostic ONLY, never claim this retracts a projectile/ammo.
-                    # A nonzero counter is a failed engine lock smoke test.
+                    # Diagnostics only: do not restart/extend or refund ammo.
                     (agent_get_slot, ":early", ":agent", slot_agent_canakkale_early_shots),
                     (val_add, ":early", 1),
                     (agent_set_slot, ":agent", slot_agent_canakkale_early_shots, ":early"),
-                    (agent_set_animation, ":agent", "anim_rifle_bolt_cycle_2s", 1),
                 (try_end),
             (else_try),
-                # Predict only the locally controlled shooter, not remote agents.
                 (get_player_agent_no, ":local_agent"),
                 (eq, ":agent", ":local_agent"),
+                (store_mission_timer_a_msec, ":now"),
+                (agent_get_slot, ":until", ":agent", slot_agent_canakkale_bolt_until),
+                (le, ":until", ":now"),
+                # Retain pending prediction acknowledgements after expiry, so
+                # a first late server echo cannot replay an already-ended shot.
+                (agent_get_slot, ":predictions", ":agent", slot_agent_canakkale_bolt_predictions),
+                (val_add, ":predictions", 1),
+                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_predictions, ":predictions"),
                 (call_script, "script_canakkale_start_bolt", ":agent"),
             (try_end),
         (try_end),
@@ -72,21 +87,40 @@ canakkale_scripts = [
             (agent_is_alive, ":agent"),
             (agent_get_slot, ":until", ":agent", slot_agent_canakkale_bolt_until),
             (gt, ":until", 0),
-            (agent_get_animation, ":animation", ":agent", 1),
+            (agent_get_slot, ":visual", ":agent", slot_agent_canakkale_bolt_visual),
+            (agent_get_wielded_item, ":weapon", ":agent", 0),
             (try_begin),
-                (lt, ":now", ":until"),
-                # Weapon swap, ready/aim or an animation interruption cannot
-                # clear the timer. Priority 90 beats ready/fire/equip/struck;
-                # death (95) still wins. Do not scale by proficiency/weapon speed.
-                (neq, ":animation", "anim_rifle_bolt_cycle_2s"),
-                (agent_set_animation, ":agent", "anim_rifle_bolt_cycle_2s", 1),
-            (else_try),
                 (ge, ":now", ":until"),
-                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, 0),
+                # One unconditional release of our owned action, even when
+                # agent_get_animation reports a transient/different action.
                 (try_begin),
-                    # A restarted/interrupted clip must not extend the lock.
-                    (eq, ":animation", "anim_rifle_bolt_cycle_2s"),
-                    (agent_set_animation, ":agent", "anim_stand_crossbow", 1),
+                    (gt, ":visual", 0),
+                    (agent_set_animation, ":agent", "anim_stand", 1),
+                (try_end),
+                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, 0),
+                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 0),
+                (agent_set_slot, ":agent", slot_agent_canakkale_bolt_weapon, -1),
+                # Keep last_event after expiry: late duplicates cannot replay.
+            (else_try),
+                (agent_get_slot, ":previous_weapon", ":agent", slot_agent_canakkale_bolt_weapon),
+                (try_begin),
+                    (neq, ":weapon", ":previous_weapon"),
+                    (try_begin),
+                        (gt, ":visual", 0),
+                        (agent_set_animation, ":agent", "anim_stand", 1),
+                    (try_end),
+                    (assign, ":visual", 0),
+                    (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 0),
+                    (agent_set_slot, ":agent", slot_agent_canakkale_bolt_weapon, ":weapon"),
+                (try_end),
+                (try_begin),
+                    # Returning to either rifle cannot clear the lock, but
+                    # must never replay its moving bolt sequence.
+                    (eq, ":visual", 0),
+                    (this_or_next|eq, ":weapon", "itm_canakkale_turk_rifle"),
+                    (eq, ":weapon", "itm_canakkale_british_rifle"),
+                    (agent_set_animation, ":agent", "anim_canakkale_bolt_hold", 1),
+                    (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 2),
                 (try_end),
             (try_end),
         (try_end),
@@ -98,8 +132,11 @@ canakkale_mission_triggers = [
         (store_trigger_param_1, ":agent"),
         (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, 0),
         (agent_set_slot, ":agent", slot_agent_canakkale_early_shots, 0),
+        (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 0),
+        (agent_set_slot, ":agent", slot_agent_canakkale_bolt_last_event, 0),
+        (agent_set_slot, ":agent", slot_agent_canakkale_bolt_weapon, -1),
+        (agent_set_slot, ":agent", slot_agent_canakkale_bolt_predictions, 0),
     ]),
-    (0, 0, 0, [], [
-        (call_script, "script_canakkale_bolt_tick"),
-    ]),
+    # Poll transitions/deadlines each frame; never replay an action per frame.
+    (0, 0, 0, [], [(call_script, "script_canakkale_bolt_tick")]),
 ]
