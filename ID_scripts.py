@@ -774,5 +774,8 @@ script_multiplayer_ccoop_spawn_prison_cart = 772
 script_multiplayer_ccoop_start_player_and_squad_respawn_period = 773
 script_multiplayer_upgrade_player_equipment = 774
 script_mp_calculate_auto_squad_size = 775
+script_canakkale_start_bolt = 776
+script_canakkale_rifle_fired = 777
+script_canakkale_bolt_tick = 778
 
 

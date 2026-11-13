@@ -2119,8 +2119,8 @@ scripts = [
       (assign, "$g_multiplayer_point_gained_from_capturing_flag", 5),
       (assign, "$g_multiplayer_game_type", 0),
 	  (assign, "$g_multiplayer_is_game_type_captain", 0),
-      (assign, "$g_multiplayer_team_1_faction", "fac_kingdom_1"),
-      (assign, "$g_multiplayer_team_2_faction", "fac_kingdom_2"),
+      (assign, "$g_multiplayer_team_1_faction", "fac_kingdom_3"),
+      (assign, "$g_multiplayer_team_2_faction", "fac_kingdom_4"),
       (assign, "$g_multiplayer_next_team_1_faction", "$g_multiplayer_team_1_faction"),
       (assign, "$g_multiplayer_next_team_2_faction", "$g_multiplayer_team_2_faction"),
       (assign, "$g_multiplayer_num_bots_team_1", 0),
@@ -2389,6 +2389,28 @@ scripts = [
 
       #1-Swadian Warriors
       #1a-Swadian Crossbowman
+      # CANAKKALE-MVP-001: item classes and per-troop purchase/selection allowlist.
+      (item_set_slot, "itm_canakkale_turk_rifle", slot_item_multiplayer_item_class, multi_item_class_type_crossbow),
+      (item_set_slot, "itm_canakkale_british_rifle", slot_item_multiplayer_item_class, multi_item_class_type_crossbow),
+      (item_set_slot, "itm_canakkale_turk_cap", slot_item_multiplayer_item_class, multi_item_class_type_light_helm),
+      (item_set_slot, "itm_canakkale_british_helmet", slot_item_multiplayer_item_class, multi_item_class_type_heavy_helm),
+      (item_set_slot, "itm_yanichar_forma_b", slot_item_multiplayer_item_class, multi_item_class_type_light_armor),
+      (item_set_slot, "itm_yanichar_forma_a", slot_item_multiplayer_item_class, multi_item_class_type_light_armor),
+      (item_set_slot, "itm_janissary_tapki", slot_item_multiplayer_item_class, multi_item_class_type_light_foot),
+      (item_set_slot, "itm_cavalry_boots", slot_item_multiplayer_item_class, multi_item_class_type_heavy_foot),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_turk_rifle", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_yatagan_bad", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_yanichar_forma_b", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_turk_cap", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_janissary_tapki", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_british_rifle", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_palash", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_yanichar_forma_a", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_british_helmet", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_cavalry_boots", "trp_nord_scout_multiplayer"),
+
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_bullets", "trp_swadian_crossbowman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_swadian_crossbowman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_bullets", "trp_swadian_crossbowman_multiplayer"),
@@ -2593,40 +2615,6 @@ scripts = [
    
       #3-Khergit Warriors
       #khergit_veteran_footman_multiplayer
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_boots", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_boots_p", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_boots_p", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_boots_ttr", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_shapka", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_light_helmet", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_norm_helmet", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_good_helmet", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_kava_forma", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_bad_armor_b", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_light_armor_b", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_ttr_norm_armor", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_bad_sablya_a", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_norm_sablya_a", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_good_sablya_a", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_luk", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_luk", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_gud_luk", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_bad_musket", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_norm_musket", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_t_good_musket", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_arrows", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_arrows", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_bullets", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_shield", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_shield", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_shield", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_stal_shield", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_janissar_hat", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_yanichar_forma", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_janissary_tapki", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_yatagan_bad", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_yatagan_good", "trp_khergit_veteran_footman_multiplayer"),
 
  
 
@@ -2767,42 +2755,6 @@ scripts = [
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_bullets", "trp_nord_veteran_multiplayer"),
             
       #4b-Nord Scout
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_bullets", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_bullets", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_karabin", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_karabin", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_karabin", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_uber_karabin", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_pistol", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_pistol", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_shpaga", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_shpaga_m", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_palash", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_palash", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_palash_m", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_lance", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_lance", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_lance", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_kava_forma", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_light_armor", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_norm_armor", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_good_k_armor", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_shapka", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_light_helmet", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_norm_p_helmet", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_swed_good_k_helmet", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_gloves", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_gloves", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_uber_gloves", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_boots_swed", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_botforts", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_botforts", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_good_botforts", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_very_bad_horse", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_horse", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_horse", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_tank_horse", "trp_nord_scout_multiplayer"),
             
       
       #5-Rhodok Warriors         
@@ -8170,6 +8122,12 @@ scripts = [
       (store_script_param, ":event_type", 2),	  	
 	  
       (try_begin),
+        (eq, ":event_type", multiplayer_event_canakkale_bolt),
+        (neg|multiplayer_is_server),
+        (eq, ":player_no", 0), # only the server can start a remote actor's bolt cycle
+        (store_script_param, ":agent_no", 3),
+        (call_script, "script_canakkale_start_bolt", ":agent_no"),
+      (else_try),
         ###############
         #SERVER EVENTS#
         ###############
@@ -10667,13 +10625,16 @@ scripts = [
      (store_script_param_1, ":troop_no"),
      (assign, ":troop_class", multi_troop_class_other),
      (try_begin),
+       (this_or_next|eq, ":troop_no", "trp_khergit_veteran_footman_multiplayer"),
+       (eq, ":troop_no", "trp_nord_scout_multiplayer"),
+       (assign, ":troop_class", multi_troop_class_crossbowman),
+     (else_try),
        (this_or_next|eq, ":troop_no", "trp_vaegir_archer_multiplayer"),
        #(this_or_next|eq, ":troop_no", "trp_sarranid_archer_multiplayer"),
        (eq, ":troop_no", "trp_nord_archer_multiplayer"),
        (assign, ":troop_class", multi_troop_class_archer),
      (else_try),
        (this_or_next|eq, ":troop_no", "trp_swadian_man_at_arms_multiplayer"),
-       (this_or_next|eq, ":troop_no", "trp_nord_scout_multiplayer"),
        (this_or_next|eq, ":troop_no", "trp_rhodok_horseman_multiplayer"),
        #(this_or_next|eq, ":troop_no", "trp_sarranid_mamluke_multiplayer"),
        (eq, ":troop_no", "trp_vaegir_horseman_multiplayer"),
@@ -46392,3 +46353,7 @@ scripts = [
 	
 ]
 
+
+# The appended helpers preserve all stock script IDs.
+from module_canakkale import canakkale_scripts
+scripts.extend(canakkale_scripts)

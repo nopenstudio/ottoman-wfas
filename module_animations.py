@@ -2111,3 +2111,8 @@ animations = [
  ["unused_horse_anim_99", 0, 0, [1.0, "anim_horse", 0, 1, 0]],
  ["unused_horse_anim_100", 0, 0, [1.0, "anim_horse", 0, 1, 0]],
  ]
+
+# User-installed BRF action: SMD time 1..61 imports as BRF frame indices 0..60.
+# Fixed duration, deliberately NO amf_use_weapon_speed and NO aim/vertical-rotation flags.
+animations.append(["rifle_bolt_cycle_2s", 0, 90|amf_play,
+ [2.0, "rifle_bolt_cycle_2s", 0, 60, arf_stick_item_to_left_hand|arf_blend_in_3]])

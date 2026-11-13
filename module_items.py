@@ -2327,5 +2327,19 @@ items = [
 ["duel_sword", "Dueling Sword", [("polyak_sablya_pure_c",0),("polyak_sablya_pure_c_scabbard", ixmesh_carry)], itp_type_one_handed_wpn|itp_secondary|itp_primary, itc_scimitar|itcf_carry_sword_left_hip|itcf_show_holster_when_drawn,
  330 , weight(1.3)|difficulty(0)|spd_rtng(92) | weapon_length(95)|swing_damage(20 , cut) | thrust_damage(0 ,  pierce),imodbits_sword ],
 
+# CANAKKALE-MVP-001: only these two rifles have a seven-round magazine/bolt trigger.
+["canakkale_turk_rifle", "Turkish Infantry Rifle", [("musket_turk_koleso",0),("musket_turk_koleso_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
+ 520 , weight(9.0)|difficulty(9)|spd_rtng(36) | shoot_speed(180) | thrust_damage(58 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
+   (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
+["canakkale_british_rifle", "British Infantry Rifle", [("mushket_a",0),("mushket_a_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
+ 500 , weight(9.0)|difficulty(9)|spd_rtng(37) | shoot_speed(180) | thrust_damage(57 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
+   (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
+["canakkale_turk_cap", "Turkish Field Cap", [("turk-cap",0)], itp_type_head_armor, 0,
+ 30, weight(1)|head_armor(3)|difficulty(0), imodbits_cloth],
+["canakkale_british_helmet", "British Steel Helmet", [("ingiliz-cap",0)], itp_type_head_armor, 0,
+ 60, weight(1.5)|head_armor(12)|difficulty(0), imodbits_plate],
+
 ["items_end", "End of list", [("shield_round_a",0)], 0, 0, 1, 0, 0],
 ]
