@@ -1,0 +1,30 @@
+{
+  "runtime_status": "User confirms existing OBJ/SMD assets already imported to BRF and loaded by local module.ini. Local BRF/INI not accessible here; no duplicate resources generated.",
+  "base_commit": "27989be0cad49d55055e44af8bbc293f5ece95d1",
+  "required_meshes": {
+    "turk-cap": "source/turk-cap.obj",
+    "ingiliz-cap": "source/ingiliz-cap.obj",
+    "janichar2": "existing WFaS body mesh, Turkish uniform",
+    "janichar1": "existing WFaS body mesh, British uniform"
+  },
+  "required_animation": {
+    "name": "rifle_bolt_cycle_2s",
+    "source": "source/rifle_bolt_cycle_2s.SMD",
+    "source_reference_time": 0,
+    "source_action_times": [
+      1,
+      61
+    ],
+    "brf_frame_indices": [
+      0,
+      60
+    ],
+    "duration_seconds": 2,
+    "bones": 20
+  },
+  "sha256": {
+    "turk-cap.obj": "04c2d938acaaf66da8b39f80c388a0c6374a463059acab42418d68b51c44f64a",
+    "ingiliz-cap.obj": "3f22adfa88a9c3ffbd6d520de001fab0d49c4821be5cf00d4959f577a405d6d9",
+    "rifle_bolt_cycle_2s.SMD": "29f69d28895a8b3ca10f04444f20a8bc9e62e0593061487f9f8cf7d8a976f2b9"
+  }
+}
