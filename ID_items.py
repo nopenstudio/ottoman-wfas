@@ -925,4 +925,5 @@ itm_canakkale_british_rifle = 923
 itm_canakkale_british_rifle_melee = 924
 itm_canakkale_turk_cap = 925
 itm_canakkale_british_helmet = 926
-itm_items_end = 927
+itm_canakkale_bullets = 927
+itm_items_end = 928

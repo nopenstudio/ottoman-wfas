@@ -1689,3 +1689,5 @@ slot_agent_canakkale_bolt_visual = 142
 slot_agent_canakkale_bolt_last_event = 143
 slot_agent_canakkale_bolt_weapon = 144
 slot_agent_canakkale_bolt_predictions = 145
+
+slot_agent_canakkale_reload_seen = 146

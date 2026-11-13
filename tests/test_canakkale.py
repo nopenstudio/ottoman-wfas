@@ -44,7 +44,24 @@ class SourceTests(unittest.TestCase):
         old=baseline('module_items.py','items')
         self.assertEqual(items[:len(old)-1],old[:-1])
         self.assertEqual(items[-1],old[-1])
-        self.assertEqual(len(items),len(old)+6)
+        self.assertEqual(len(items),len(old)+7)
+    def test_projectile_mesh_and_hit_behavior(self):
+        ammo,stock=I['canakkale_bullets'],I['norm_bullets']
+        self.assertEqual(ammo[3:],stock[3:])
+        self.assertIn(('flying_missile',ixmesh_flying_ammo),ammo[2])
+        self.assertIn(('bullet_normal',ixmesh_flying_ammo),stock[2])
+
+    def test_reload_hook(self):
+        from module_canakkale_assets import custom_magazine_reload
+        hooks=[t for t in canakkale_mission_triggers if 'anim_rifle_magazine_reload_7' in repr(t)]
+        self.assertEqual(len(hooks),int(custom_magazine_reload))
+        if hooks:
+            ops=hooks[0][4]
+            self.assertIn((agent_get_attack_action, ':action', ':agent'),ops)
+            self.assertIn((neq, ':action', 5),ops)
+            self.assertIn((agent_slot_eq, ':agent', slot_agent_canakkale_bolt_until, 0),ops)
+            self.assertEqual(animations[-1][0],'rifle_magazine_reload_7')
+
     def test_two_seven_round_clones(self):
         for new,base in [('canakkale_turk_rifle','t_norm_musket'),
                          ('canakkale_british_rifle','norm_musket')]:
@@ -67,21 +84,23 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(shooting[2][0][0],mesh)
             self.assertEqual(close[2][0][0],mesh)
             self.assertEqual(close[3]&0xff,itp_type_polearm)
-            self.assertTrue(close[3]&itp_has_bayonet)
+            self.assertFalse(close[3]&(itp_has_bayonet|itp_offset_musket))
             self.assertTrue(shooting[3]&itp_next_item_as_melee)
-            self.assertTrue(close[4]&itcf_thrust_musket)
+            self.assertEqual(close[4],itc_parry_polearm|itcf_thrust_polearm|itcf_carry_spear)
             no_swings=itcf_overswing_musket|itcf_slashright_twohanded|itcf_slashleft_twohanded
             self.assertEqual(close[4]&no_swings,0)
             self.assertEqual(get_swing_damage(close[6])&255,0)
             self.assertEqual(get_thrust_damage(close[6])>>8,pierce)
-            self.assertGreater(get_thrust_damage(close[6])&255,0)
+            self.assertEqual(get_thrust_damage(close[6])&255,24)
     def test_smoke_is_from_real_missile_launch_once_per_rifle(self):
         launch=S['game_missile_launch']
         helper=S['oim_on_musket_on_attack']
         for rifle,offset in [('canakkale_turk_rifle',(0,145,-4,-133)),
                              ('canakkale_british_rifle',(0,130,-4,-120))]:
             self.assertEqual(launch.count((eq,':item_id','itm_'+rifle)),1)
-            self.assertEqual(launch.count((call_script,'script_oim_on_musket_on_attack',itp_type_musket)+offset),1)
+            start=launch.index((eq,':item_id','itm_'+rifle))+1
+            self.assertEqual(launch[start:launch.index(else_try,start)],
+                             [(call_script,'script_oim_on_musket_on_attack',itp_type_musket)+offset])
         self.assertIn((copy_position,pos51,pos1),helper)
         self.assertIn((particle_system_burst_no_sync,'psys_oim_musket_smoke',pos51,8),helper)
         self.assertNotIn('psys_oim_musket_smoke',repr(canakkale_scripts))
@@ -104,7 +123,7 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(I[uniform][2][0][0],bodymesh)
             self.assertEqual(I[cap][2],[(headmesh,0)])
             self.assertEqual(I[cap][3]&0xff,itp_type_head_armor)
-            expected=set(ids[x] for x in [rifle,cap,uniform,boots,'norm_bullets'])
+            expected=set(ids[x] for x in [rifle,cap,uniform,boots,'canakkale_bullets'])
             for name in [player,bot]:
                 t=T[name]
                 self.assertEqual(t[6],fac)
@@ -155,15 +174,15 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(oldcav,[])
     def test_animation_resource_range_and_lock_flags(self):
         old=baseline('module_animations.py','animations')
-        self.assertEqual(animations[:-2],old)
-        a=animations[-2]
+        self.assertEqual(animations[:len(old)],old)
+        a=animations[len(old)]
         self.assertEqual(a[0],'rifle_bolt_cycle_2s')
         self.assertEqual(a[3][:4],[2.0,'rifle_bolt_cycle_2s',0,60])
         self.assertEqual(a[2]&amf_priority_mask,90)
         self.assertFalse(a[2]&amf_use_weapon_speed)
         self.assertFalse(a[1]&acf_rot_vertical_mask)
         self.assertTrue(a[3][4]&arf_stick_item_to_left_hand)
-        hold=animations[-1]
+        hold=animations[len(old)+1]
         self.assertEqual(hold[0],'canakkale_bolt_hold')
         self.assertEqual(hold[3][1:4],['rifle_bolt_cycle_2s',60,60])
         self.assertTrue(hold[2]&amf_keep)
@@ -173,8 +192,8 @@ class SourceTests(unittest.TestCase):
         wanted=set(['multiplayer_dm','multiplayer_tdm','multiplayer_cf','multiplayer_sg','multiplayer_bt','multiplayer_duel'])
         for before,after in zip(old,mission_templates):
             if after[0] in wanted:
-                self.assertEqual(after[5][:-2],before[5])
-                self.assertEqual(after[5][-2:],canakkale_mission_triggers)
+                self.assertEqual(after[5][:-len(canakkale_mission_triggers)],before[5])
+                self.assertEqual(after[5][-len(canakkale_mission_triggers):],canakkale_mission_triggers)
             else:self.assertEqual(after,before)
     def test_no_ammo_rewrite_or_untrusted_client_command(self):
         forbidden=set([agent_set_ammo,agent_refill_ammo,agent_equip_item,agent_unequip_item])
