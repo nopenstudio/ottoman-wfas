@@ -4,4 +4,4 @@
 
 #export_dir = "c:/MiB-OiM/MiB-New World/MiB-New World/Build/Modules/Ogniem i Mieczem/"
 #export_dir = "c:/MiB-OiM/Mount&Blade/SBL-OiM/build_dlc/Modules/Ogniem i Mieczem/"
-export_dir = "E:/Develop/MBWarbandWFaS/WOTS/Modules/Ogniem i Mieczem/"
+export_dir = "c:/Program Files (x86)/Steam/steamapps/common/Mount & Blade With Fire and Sword/Modules/OTTOMAN/"
