@@ -141,7 +141,7 @@ tracks = [
   ("oim_killed_by_swadian", "oim_killed_by_swadian.ogg", mtf_persist_until_finished|mtf_culture_1|mtf_sit_killed, 0),
   ("oim_lords_hall_khergit", "oim_lords_hall_khergit.ogg", mtf_culture_3|mtf_sit_travel, mtf_sit_town|mtf_sit_night|mtf_sit_tavern|mtf_culture_all),
   ("oim_lords_hall_nord", "oim_lords_hall_nord.ogg", mtf_sit_travel, mtf_sit_town|mtf_sit_night|mtf_sit_tavern),
-  ("oim_mount_and_blade_title_screen", "oim_mount_and_blade_title_screen.ogg", mtf_sit_main_title|mtf_start_immediately, 0),  
+  ("oim_mount_and_blade_title_screen", "ZAHIT.ogg", mtf_module_track|mtf_sit_main_title|mtf_start_immediately, 0),  
   ("oim_neutral_infiltration", "oim_neutral_infiltration.ogg", mtf_sit_town_infiltrate, 0),
   ("oim_retreat", "oim_retreat.ogg", mtf_persist_until_finished|mtf_sit_killed, 0),
   ("oim_town_neutral", "oim_town_neutral.ogg", mtf_sit_town|mtf_sit_travel, mtf_sit_tavern|mtf_sit_night),
