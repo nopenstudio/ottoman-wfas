@@ -2801,7 +2801,7 @@ troops = [
    str_9|agi_7|level(15),wp_melee(100)|wp_archery(85),knows_common|knows_riding_3|knows_power_draw_4|knows_ironflesh_4|knows_horse_archery_3,vaegir_face_middle_1, vaegir_face_older_2],
   # CANAKKALE-MVP-001: normal MP rifle infantry, never mounted.
   ["khergit_dismounted_lancer_multiplayer_ai","Turkish Rifleman","Turkish Riflemen",tf_guarantee_ranged|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_helmet,0,0,fac_kingdom_3,
-   [itm_canakkale_turk_rifle,itm_norm_bullets,itm_m_yatagan_bad,itm_yanichar_forma_b,itm_canakkale_turk_cap,itm_janissary_tapki],
+   [itm_canakkale_turk_rifle,itm_canakkale_bullets,itm_yanichar_forma_b,itm_canakkale_turk_cap,itm_janissary_tapki],
    str_10|agi_8|level(13),wp_melee(100)|wp_crossbow(120),knows_power_strike_3|knows_ironflesh_4|knows_athletics_3|knows_weapon_master_4,man_face_young_1,man_face_old_2],
   ["khergit_veteran_horse_archer_multiplayer_ai","Mounted Archers","Tatar Horse Riflemen",tf_mounted|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_ranged|tf_guarantee_horse|tf_guarantee_helmet,0,0,fac_commoners,
    [itm_bad_arrows,itm_norm_arrows,itm_good_arrows,itm_t_bad_sablya_a,itm_t_norm_sablya_a,itm_bad_luk,itm_norm_luk,itm_gud_luk,itm_norm_horse,itm_good_horse,itm_fast_horse,itm_tatar_halat_a,
@@ -2818,7 +2818,7 @@ troops = [
    str_9|agi_7|level(10),wp_melee(90),knows_weapon_master_2,nord_face_middle_1, nord_face_old_2],
   # CANAKKALE-MVP-001: normal MP rifle infantry, never mounted.
   ["nord_scout_multiplayer_ai","British Rifleman","British Riflemen",tf_guarantee_ranged|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_helmet,0,0,fac_kingdom_4,
-   [itm_canakkale_british_rifle,itm_norm_bullets,itm_bad_palash,itm_yanichar_forma_a,itm_canakkale_british_helmet,itm_cavalry_boots],
+   [itm_canakkale_british_rifle,itm_canakkale_bullets,itm_yanichar_forma_a,itm_canakkale_british_helmet,itm_cavalry_boots],
    str_10|agi_8|level(15),wp_melee(110)|wp_crossbow(110),knows_ironflesh_2|knows_athletics_3|knows_weapon_master_4,nord_face_middle_1,nord_face_old_2],
   ["nord_archer_multiplayer_ai","Musketeers","Swedish Musketeers",tf_guarantee_ranged|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_helmet,0,0,fac_commoners,
    [itm_bad_shpaga,itm_norm_shpaga,itm_bad_p_palash,itm_norm_p_palash,itm_bad_musket,itm_norm_musket,itm_good_musket_m,itm_bad_bullets,itm_norm_bullets,itm_good_bullets,itm_evropa_musket_uniforma,itm_evropa_pehot_tufli,itm_evropa_guard_shlapa,
@@ -2871,7 +2871,7 @@ troops = [
    def_attrib_multiplayer|level(20),wpex(120,85,100,70,70,40),knows_riding_4|knows_horse_archery_3|knows_ironflesh_2|knows_power_strike_3|knows_power_draw_2|knows_weapon_master_3,vaegir_face_middle_1, vaegir_face_old_2],
   # CANAKKALE-MVP-001: normal MP rifle infantry, never mounted.
   ["khergit_veteran_footman_multiplayer","Turkish Rifleman","Turkish Riflemen",tf_guarantee_ranged|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_helmet,0,0,fac_kingdom_3,
-   [itm_canakkale_turk_rifle,itm_norm_bullets,itm_m_yatagan_bad,itm_yanichar_forma_b,itm_canakkale_turk_cap,itm_janissary_tapki],
+   [itm_canakkale_turk_rifle,itm_canakkale_bullets,itm_yanichar_forma_b,itm_canakkale_turk_cap,itm_janissary_tapki],
    def_attrib_multiplayer|level(20),wpex(95,60,75,40,140,50),knows_ironflesh_4|knows_athletics_4|knows_weapon_master_2|knows_power_strike_2,khergit_face_middle_1,khergit_face_older_2],
   ["khergit_veteran_horse_archer_multiplayer", "Mounted Archer","Khergit Horse Archers",tf_guarantee_all,0,0,fac_commoners,
    [itm_bad_arrows,itm_bad_luk,itm_t_bad_sablya_a,itm_m_ttr_archer_forma,itm_bad_boots,itm_very_bad_horse],
@@ -2887,7 +2887,7 @@ troops = [
    def_attrib_multiplayer_inf|level(20),wpex(70,120,120,10,50,30),knows_weapon_master_4|knows_ironflesh_9|knows_athletics_3|knows_power_strike_3,nord_face_middle_1, nord_face_old_2],
   # CANAKKALE-MVP-001: normal MP rifle infantry, never mounted.
   ["nord_scout_multiplayer","British Rifleman","British Riflemen",tf_guarantee_ranged|tf_guarantee_boots|tf_guarantee_armor|tf_guarantee_helmet,0,0,fac_kingdom_4,
-   [itm_canakkale_british_rifle,itm_norm_bullets,itm_bad_palash,itm_yanichar_forma_a,itm_canakkale_british_helmet,itm_cavalry_boots],
+   [itm_canakkale_british_rifle,itm_canakkale_bullets,itm_yanichar_forma_a,itm_canakkale_british_helmet,itm_cavalry_boots],
    def_attrib_multiplayer|level(20),wpex(100,60,120,20,140,20),knows_ironflesh_2|knows_athletics_4|knows_weapon_master_4,nord_face_middle_1,nord_face_old_2],
   ["rhodok_veteran_crossbowman_multiplayer", "Infantryman","Riflemen",tf_guarantee_all,0,0,fac_kingdom_5,
    [itm_bad_bullets,itm_samopal_m,itm_m_ukr_strelok_forma,itm_bad_boots],

@@ -1,0 +1,37 @@
+test_actual_troop_classifier_uses_rifle_not_cavalry_classes (test_bolt_operations.BoltStateTests) ... ok
+test_death_and_captain_do_not_start_or_reassert (test_bolt_operations.BoltStateTests) ... ok
+test_delayed_acknowledgements_for_two_predictions_do_not_replay (test_bolt_operations.BoltStateTests) ... ok
+test_empty_hand_swap_uses_no_firearm_animation (test_bolt_operations.BoltStateTests) ... ok
+test_event_arriving_after_weapon_swap_does_not_animate_sword (test_bolt_operations.BoltStateTests) ... ok
+test_expiry_clears_state_once_regardless_of_reported_animation (test_bolt_operations.BoltStateTests) ... ok
+test_forged_event_is_ignored_by_server_and_other_clients (test_bolt_operations.BoltStateTests) ... ok
+test_four_observer_duplicate_events_do_not_replay (test_bolt_operations.BoltStateTests) ... ok
+test_four_owner_attacks_and_echoes_do_not_restart_prediction (test_bolt_operations.BoltStateTests) ... ok
+test_four_rapid_server_attacks_do_not_replay_extend_or_rebroadcast (test_bolt_operations.BoltStateTests) ... ok
+test_interrupted_animation_is_not_restarted_by_get_animation_mismatch (test_bolt_operations.BoltStateTests) ... ok
+test_late_observer_duplicates_and_old_events_are_rejected (test_bolt_operations.BoltStateTests) ... ok
+test_late_owner_echo_after_expiry_does_not_start_second_cycle (test_bolt_operations.BoltStateTests) ... ok
+test_one_shot_one_animation_across_two_seconds_of_ticks (test_bolt_operations.BoltStateTests) ... ok
+test_owner_without_prediction_can_receive_legitimate_server_action (test_bolt_operations.BoltStateTests) ... ok
+test_spawn_resets_visual_weapon_prediction_and_dedupe_state (test_bolt_operations.BoltStateTests) ... ok
+test_swap_back_holds_remaining_deadline_without_moving_replay (test_bolt_operations.BoltStateTests) ... ok
+test_swap_cancels_once_and_leaves_unrelated_weapon_alone (test_bolt_operations.BoltStateTests) ... ok
+test_switching_between_two_rifles_never_replays_bolt (test_bolt_operations.BoltStateTests) ... ok
+test_animation_resource_range_and_lock_flags (test_canakkale.SourceTests) ... ok
+test_availability_matches_defaults_and_classification (test_canakkale.SourceTests) ... ok
+test_bayonet_mesh_and_thrust_only (test_canakkale.SourceTests) ... ok
+test_existing_item_ids_and_definitions_preserved (test_canakkale.SourceTests) ... ok
+test_no_ammo_rewrite_or_untrusted_client_command (test_canakkale.SourceTests) ... ok
+test_only_normal_missions_get_lifecycle_guards (test_canakkale.SourceTests) ... ok
+test_player_bot_and_purchase_have_no_separate_swords (test_canakkale.SourceTests) ... ok
+test_projectile_mesh_and_hit_behavior (test_canakkale.SourceTests) ... ok
+test_reload_hook (test_canakkale.SourceTests) ... ok
+test_smoke_is_from_real_missile_launch_once_per_rifle (test_canakkale.SourceTests) ... ok
+test_troop_ids_and_captain_preserved (test_canakkale.SourceTests) ... ok
+test_two_seven_round_clones (test_canakkale.SourceTests) ... ok
+test_visuals_inventory_stats_and_foot_spawn (test_canakkale.SourceTests) ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 0.397s
+
+OK

@@ -111,7 +111,7 @@ The runner stages the source, invokes the original `build_module.bat` processor
 order, fails on nonzero exits **or printed ERROR/traceback**, and writes build
 logs and generated files under the selected output. It never uses the Steam
 export path. `WFAS_EXPORT_DIR` is an optional environment override; without it,
-`module_info.py` retains the user's original Windows OTTOMAN path.
+`module_info.py` uses the official Windows `Seddulbahir 1914` module folder (override `WFAS_MODULES_ROOT` for non-default Steam libraries; `WFAS_EXPORT_DIR` overrides the complete export path).
 
 Apply compiled module data to matching **client and dedicated server** module
 copies. Retain the user's already-loaded BRF/DDS resources and `module.ini`.

@@ -2389,6 +2389,7 @@ scripts = [
 
       #1-Swadian Warriors
       #1a-Swadian Crossbowman
+      (item_set_slot, "itm_canakkale_bullets", slot_item_multiplayer_item_class, multi_item_class_type_bolt),
       # CANAKKALE-MVP-001: item classes and per-troop purchase/selection allowlist.
       (item_set_slot, "itm_canakkale_turk_rifle", slot_item_multiplayer_item_class, multi_item_class_type_crossbow),
       (item_set_slot, "itm_canakkale_british_rifle", slot_item_multiplayer_item_class, multi_item_class_type_crossbow),
@@ -2399,14 +2400,12 @@ scripts = [
       (item_set_slot, "itm_janissary_tapki", slot_item_multiplayer_item_class, multi_item_class_type_light_foot),
       (item_set_slot, "itm_cavalry_boots", slot_item_multiplayer_item_class, multi_item_class_type_heavy_foot),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_turk_rifle", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_khergit_veteran_footman_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_m_yatagan_bad", "trp_khergit_veteran_footman_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_bullets", "trp_khergit_veteran_footman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_yanichar_forma_b", "trp_khergit_veteran_footman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_turk_cap", "trp_khergit_veteran_footman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_janissary_tapki", "trp_khergit_veteran_footman_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_british_rifle", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_norm_bullets", "trp_nord_scout_multiplayer"),
-      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_bad_palash", "trp_nord_scout_multiplayer"),
+      (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_bullets", "trp_nord_scout_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_yanichar_forma_a", "trp_nord_scout_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_canakkale_british_helmet", "trp_nord_scout_multiplayer"),
       (call_script, "script_multiplayer_set_item_available_for_troop", "itm_cavalry_boots", "trp_nord_scout_multiplayer"),
@@ -45485,6 +45484,14 @@ scripts = [
     [ 
 	(store_script_param, ":item_id", 2),
     (try_begin),
+      # CANAKKALE-MVP-002: muzzle offsets match the stock mesh counterparts.
+      # Missile hook is one call per actual projectile, not a bolt tick.
+      (eq, ":item_id", "itm_canakkale_turk_rifle"),
+      (call_script, "script_oim_on_musket_on_attack", itp_type_musket, 0, 145, -4, -133),
+    (else_try),
+      (eq, ":item_id", "itm_canakkale_british_rifle"),
+      (call_script, "script_oim_on_musket_on_attack", itp_type_musket, 0, 130, -4, -120),
+    (else_try),
       (this_or_next|eq, ":item_id", "itm_samopal"),
       (eq, ":item_id", "itm_samopal_b"),
       (call_script, "script_oim_on_musket_on_attack", itp_type_musket, 0, 115, -4, -106),
