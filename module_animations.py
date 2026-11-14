@@ -1,3 +1,4 @@
+from module_canakkale_assets import custom_magazine_reload
 from header_common import *
 from header_animations import *
 
@@ -2121,3 +2122,7 @@ animations.append(["rifle_bolt_cycle_2s", 0, 90|amf_play,
 # No moving frames, no amf_play/restart; bolt_tick releases it at the deadline.
 animations.append(["canakkale_bolt_hold", 0, 90|amf_keep,
  [2.0, "rifle_bolt_cycle_2s", 60, 60, arf_stick_item_to_left_hand]])
+
+if custom_magazine_reload:
+    animations.append(["rifle_magazine_reload_7", 0, amf_priority_reload|amf_play,
+        [3.0, "rifle_magazine_reload_7", 0, 90, arf_blend_in_3]])
