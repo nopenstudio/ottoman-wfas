@@ -131,6 +131,7 @@ canakkale_scripts = [
 canakkale_mission_triggers = [
     (ti_on_agent_spawn, 0, 0, [], [
         (store_trigger_param_1, ":agent"),
+        (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 0),
         (agent_set_slot, ":agent", slot_agent_canakkale_bolt_until, 0),
         (agent_set_slot, ":agent", slot_agent_canakkale_early_shots, 0),
         (agent_set_slot, ":agent", slot_agent_canakkale_bolt_visual, 0),

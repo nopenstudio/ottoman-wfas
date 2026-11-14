@@ -1,3 +1,4 @@
+from module_canakkale_assets import custom_magazine_reload
 from module_constants import *
 from ID_factions import *
 from header_items import  *
@@ -2329,13 +2330,13 @@ items = [
 
 # CANAKKALE-MVP-001: only these two rifles have a seven-round magazine/bolt trigger.
 ["canakkale_turk_rifle", "Turkish Infantry Rifle", [("musket_turk_koleso",0),("musket_turk_koleso_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield|itp_next_item_as_melee ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
- 520 , weight(9.0)|difficulty(9)|spd_rtng(36) | shoot_speed(180) | thrust_damage(58 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ 520 , weight(9.0)|difficulty(9)|spd_rtng(100 if custom_magazine_reload else 36) | shoot_speed(180) | thrust_damage(58 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
  [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
    (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
 ["canakkale_turk_rifle_melee", "Turkish Infantry Rifle", [("musket_turk_koleso",0)], itp_type_polearm|itp_two_handed|itp_primary|itp_wooden_parry|itp_cant_use_on_horseback|itp_no_blur, itc_parry_polearm|itcf_thrust_polearm|itcf_carry_spear,
  0, weight(9.0)|difficulty(9)|spd_rtng(85)|weapon_length(110)|swing_damage(0,pierce)|thrust_damage(24,pierce),imodbits_crossbow ],
 ["canakkale_british_rifle", "British Infantry Rifle", [("mushket_a",0),("mushket_a_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield|itp_next_item_as_melee ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
- 500 , weight(9.0)|difficulty(9)|spd_rtng(37) | shoot_speed(180) | thrust_damage(57 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ 500 , weight(9.0)|difficulty(9)|spd_rtng(100 if custom_magazine_reload else 37) | shoot_speed(180) | thrust_damage(57 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
  [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
    (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
 ["canakkale_british_rifle_melee", "British Infantry Rifle", [("mushket_a",0)], itp_type_polearm|itp_two_handed|itp_primary|itp_wooden_parry|itp_cant_use_on_horseback|itp_no_blur, itc_parry_polearm|itcf_thrust_polearm|itcf_carry_spear,

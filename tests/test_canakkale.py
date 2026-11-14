@@ -51,6 +51,14 @@ class SourceTests(unittest.TestCase):
         self.assertIn(('flying_missile',ixmesh_flying_ammo),ammo[2])
         self.assertIn(('bullet_normal',ixmesh_flying_ammo),stock[2])
 
+    def test_native_reload_speed_is_scoped_to_opt_in_rifles(self):
+        from module_canakkale_assets import custom_magazine_reload
+        for name,stock,original in [('canakkale_turk_rifle','t_norm_musket',36),
+                                    ('canakkale_british_rifle','norm_musket',37)]:
+            self.assertEqual(get_speed_rating(I[stock][6]),original)
+            self.assertEqual(get_speed_rating(I[name][6]),100 if custom_magazine_reload else original)
+            self.assertEqual(get_max_ammo(I[name][6]),7)
+
     def test_reload_hook(self):
         from module_canakkale_assets import custom_magazine_reload
         hooks=[t for t in canakkale_mission_triggers if 'anim_rifle_magazine_reload_7' in repr(t)]
@@ -60,6 +68,10 @@ class SourceTests(unittest.TestCase):
             self.assertIn((agent_get_attack_action, ':action', ':agent'),ops)
             self.assertIn((neq, ':action', 5),ops)
             self.assertIn((agent_slot_eq, ':agent', slot_agent_canakkale_bolt_until, 0),ops)
+            self.assertIn((agent_slot_eq, ':agent', slot_agent_canakkale_reload_seen, 0),ops)
+            self.assertIn((agent_set_slot, ':agent', slot_agent_canakkale_reload_seen, 1),ops)
+            self.assertEqual(ops.count((agent_set_animation, ':agent', 'anim_rifle_magazine_reload_7', 1)),1)
+            self.assertFalse(any(isinstance(o,tuple) and o[0] in (agent_set_ammo,agent_refill_ammo) for o in ops))
             self.assertEqual(animations[-1][0],'rifle_magazine_reload_7')
 
     def test_two_seven_round_clones(self):
