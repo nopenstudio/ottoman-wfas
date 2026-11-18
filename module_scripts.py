@@ -46383,3 +46383,12 @@ scripts = [
 # The appended helpers preserve all stock script IDs.
 from module_canakkale import canakkale_scripts
 scripts.extend(canakkale_scripts)
+
+# The dedicated TDM test build alone accepts the experimental request.
+from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_receive
+if fire_orders_poc_enabled:
+    for _name, _ops in scripts:
+        if _name == "game_receive_network_message":
+            _first_branch = _ops.index(try_begin) + 1
+            _ops[_first_branch:_first_branch] = fire_orders_poc_receive + [else_try]
+            break
