@@ -17353,9 +17353,9 @@ for _mission in mission_templates:
                      "multiplayer_sg", "multiplayer_bt", "multiplayer_duel"):
     _mission[5].extend(canakkale_mission_triggers)
 
-from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_trigger
+from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_triggers
 if fire_orders_poc_enabled:
   for _mission in mission_templates:
     if _mission[0] == "multiplayer_tdm":
-      _mission[5].append(fire_orders_poc_trigger)
+      _mission[5].extend(fire_orders_poc_triggers)
       break

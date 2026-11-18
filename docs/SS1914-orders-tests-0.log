@@ -3,6 +3,13 @@ Python 2.7.18 (c7f2b53ceffe, Aug 22 2024, 13:10:41)
 $ WFAS_FIRE_ORDERS_POC=0 pypy -m unittest discover -s tests -v
 test_mutation_follows_server_and_bot_guards (test_fire_orders_poc.FireOrdersProbeTests) ... ok
 test_opt_in_wiring (test_fire_orders_poc.FireOrdersProbeTests) ... ok
+test_clock_rollback_accepts_and_restarts_throttle (test_fire_orders_poc.RateLimitTests) ... ok
+test_first_request_at_zero_and_interval_boundary (test_fire_orders_poc.RateLimitTests) ... ok
+test_invalid_requests_never_consume_budget_or_scan (test_fire_orders_poc.RateLimitTests) ... ok
+test_mission_reset_even_when_new_clock_has_caught_up (test_fire_orders_poc.RateLimitTests) ... ok
+test_player_budgets_and_bot_ownership_are_independent (test_fire_orders_poc.RateLimitTests) ... ok
+test_rejoin_resets_reused_player_id_only (test_fire_orders_poc.RateLimitTests) ... ok
+test_snapshot_and_wield_requests_share_budget (test_fire_orders_poc.RateLimitTests) ... ok
 test_actual_troop_classifier_uses_rifle_not_cavalry_classes (test_bolt_operations.BoltStateTests) ... ok
 test_death_and_captain_do_not_start_or_reassert (test_bolt_operations.BoltStateTests) ... ok
 test_delayed_acknowledgements_for_two_predictions_do_not_replay (test_bolt_operations.BoltStateTests) ... ok
@@ -38,6 +45,6 @@ test_two_seven_round_clones (test_canakkale.SourceTests) ... ok
 test_visuals_inventory_stats_and_foot_spawn (test_canakkale.SourceTests) ... ok
 
 ----------------------------------------------------------------------
-Ran 35 tests in 0.533s
+Ran 42 tests in 0.477s
 
 OK

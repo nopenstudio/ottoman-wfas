@@ -1,4 +1,5 @@
 """Check source wiring and fail-closed probe scope under Python 2.7."""
+import operator
 import os
 import sys
 import unittest
@@ -6,19 +7,21 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from header_operations import *
+from header_triggers import ti_before_mission_start, ti_server_player_joined
 from module_fire_orders_poc import (
     fire_orders_poc_enabled, fire_orders_poc_event, fire_orders_poc_receive,
-    fire_orders_poc_trigger,
+    fire_orders_poc_interval_ms, fire_orders_poc_triggers,
 )
 from module_mission_templates import mission_templates
 from module_scripts import scripts
+from test_bolt_operations import parse
 
 
 class FireOrdersProbeTests(unittest.TestCase):
     def test_opt_in_wiring(self):
-        hooked = [mission[0] for mission in mission_templates
-                  if fire_orders_poc_trigger in mission[5]]
-        self.assertEqual(hooked, ["multiplayer_tdm"] if fire_orders_poc_enabled else [])
+        for trigger in fire_orders_poc_triggers:
+            hooked = [mission[0] for mission in mission_templates if trigger in mission[5]]
+            self.assertEqual(hooked, ["multiplayer_tdm"] if fire_orders_poc_enabled else [])
         dispatch = dict(scripts)["game_receive_network_message"]
         self.assertEqual(dispatch[:2], [
             (store_script_param, ":player_no", 1),
@@ -56,6 +59,186 @@ class FireOrdersProbeTests(unittest.TestCase):
         ]
         positions = [ops.index(op) for op in guards]
         self.assertEqual(positions, sorted(positions))
+
+
+class RequestModel(object):
+    """Execute the probe tuples with two players and one eligible rifle bot."""
+    def __init__(self):
+        self.slots = {}
+        self.scans = self.logs = 0
+        self.players = {1: 11, 2: 12}
+        self.owner = 1
+        self.now = 0
+        self.weapon = "itm_canakkale_turk_rifle"
+
+    def request(self, player=1, action=0, mask=1):
+        values = {
+            ":player_no": player, ":event_type": fire_orders_poc_event,
+            "$g_multiplayer_game_type": 1, "$g_multiplayer_is_game_type_captain": 0,
+        }
+        self.execute(parse(fire_orders_poc_receive)[0], values, [player, fire_orders_poc_event, mask, action])
+
+    def reset(self, event, player=1):
+        trigger = next(t for t in fire_orders_poc_triggers if t[0] == event)
+        self.execute(parse(trigger[3] + trigger[4])[0], {}, [player])
+
+    def execute(self, nodes, values, params):
+        def get(value):
+            return values.get(value, value)
+
+        either = False
+        for node in nodes:
+            kind, operation = node[:2]
+            code, args = operation[0], operation[1:]
+            if kind == "block":
+                branches = node[2]
+                if code == try_begin:
+                    for branch in branches:
+                        if self.execute(branch, values, params):
+                            break
+                else:
+                    if code == try_for_agents:
+                        self.scans += 1
+                        members = [20]
+                    else:
+                        members = range(get(args[1]), get(args[2]))
+                    for member in members:
+                        values[args[0]] = member
+                        self.execute(branches[0], values, params)
+                continue
+
+            flagged = code
+            code &= ~(neg | this_or_next)
+            a = [get(arg) for arg in args]
+            result = True
+            if code in (multiplayer_is_server, multiplayer_is_dedicated_server,
+                        game_in_multiplayer_mode, agent_is_active, agent_is_alive, agent_is_human):
+                pass
+            elif code in (eq, neq, lt, ge, gt):
+                result = {eq: operator.eq, neq: operator.ne, lt: operator.lt,
+                          ge: operator.ge, gt: operator.gt}[code](*a)
+            elif code == is_between:
+                result = a[1] <= a[0] < a[2]
+            elif code == player_is_active:
+                result = a[0] in self.players
+            elif code == agent_is_non_player:
+                result = a[0] == 20
+            elif code == get_max_players:
+                values[args[0]] = 4
+            elif code in (player_get_team_no, agent_get_team, agent_get_division,
+                          agent_get_slot, agent_get_ammo, team_get_weapon_usage_order):
+                values[args[0]] = 0
+            elif code == player_get_agent_id:
+                values[args[0]] = self.players[a[1]]
+            elif code == store_script_param:
+                values[args[0]] = params[a[1] - 1]
+            elif code == store_trigger_param_1:
+                values[args[0]] = params[0]
+            elif code == store_mission_timer_a_msec:
+                values[args[0]] = self.now
+            elif code == player_get_slot:
+                values[args[0]] = self.slots.get(tuple(a[1:]), 0)
+            elif code == player_set_slot:
+                self.slots[tuple(a[:2])] = a[2]
+            elif code in (store_add, store_sub):
+                values[args[0]] = a[1] + a[2] if code == store_add else a[1] - a[2]
+            elif code in (val_lshift, val_and, val_add):
+                values[args[0]] = {val_lshift: operator.lshift, val_and: operator.and_,
+                                  val_add: operator.add}[code](*a)
+            elif code == assign:
+                values[args[0]] = a[1]
+            elif code == agent_get_group:
+                values[args[0]] = self.owner
+            elif code == agent_get_troop_id:
+                values[args[0]] = "trp_khergit_dismounted_lancer_multiplayer_ai"
+            elif code == agent_get_item_slot:
+                values[args[0]] = "itm_canakkale_turk_rifle" if a[2] == 0 else -1
+            elif code == agent_get_wielded_item:
+                values[args[0]] = self.weapon
+            elif code == agent_set_wielded_item:
+                self.weapon = a[1]
+            elif code == server_add_message_to_log:
+                self.logs += 1
+            else:
+                raise AssertionError("Unexpected opcode %r" % (operation,))
+
+            if flagged & neg:
+                result = not result
+            if flagged & this_or_next:
+                either = either or result
+                continue
+            if not (either or result):
+                return False
+            either = False
+        return True
+
+
+class RateLimitTests(unittest.TestCase):
+    def test_first_request_at_zero_and_interval_boundary(self):
+        model = RequestModel()
+        model.request(action=1)
+        self.assertEqual((model.scans, model.logs), (1, 1))
+        model.request(action=2)
+        model.now = fire_orders_poc_interval_ms - 1
+        model.request(action=2)
+        self.assertEqual((model.scans, model.logs), (1, 1))
+        model.now += 1
+        model.request(action=2)
+        self.assertEqual((model.scans, model.logs), (2, 2))
+
+    def test_snapshot_and_wield_requests_share_budget(self):
+        model = RequestModel()
+        model.request(action=0)
+        for action in (0, 1, 2):
+            model.request(action=action)
+        self.assertEqual((model.scans, model.logs), (1, 1))
+        self.assertEqual(model.weapon, "itm_canakkale_turk_rifle")
+
+    def test_player_budgets_and_bot_ownership_are_independent(self):
+        model = RequestModel()
+        model.request(player=2, action=1)
+        self.assertEqual((model.scans, model.logs), (1, 0))
+        self.assertEqual(model.weapon, "itm_canakkale_turk_rifle")
+        model.request()
+        model.request(player=2)
+        self.assertEqual((model.scans, model.logs), (2, 1))
+
+    def test_clock_rollback_accepts_and_restarts_throttle(self):
+        model = RequestModel()
+        model.now = 1000
+        model.request()
+        model.now = 10
+        model.request()
+        model.request()
+        self.assertEqual((model.scans, model.logs), (2, 2))
+
+    def test_mission_reset_even_when_new_clock_has_caught_up(self):
+        model = RequestModel()
+        model.now = 5
+        model.request()
+        model.reset(ti_before_mission_start)
+        model.now = 6
+        model.request()
+        self.assertEqual((model.scans, model.logs), (2, 2))
+
+    def test_rejoin_resets_reused_player_id_only(self):
+        model = RequestModel()
+        model.request()
+        model.request(player=2)
+        model.reset(ti_server_player_joined)
+        model.request()
+        model.request(player=2)
+        self.assertEqual((model.scans, model.logs), (3, 2))
+
+    def test_invalid_requests_never_consume_budget_or_scan(self):
+        model = RequestModel()
+        model.request(player=3)
+        model.request(mask=0)
+        model.request(mask=512)
+        model.request(action=3)
+        self.assertEqual((model.scans, model.logs, model.slots), (0, 0, {}))
+        model.request()
+        self.assertEqual((model.scans, model.logs), (1, 1))
 
 
 if __name__ == "__main__":

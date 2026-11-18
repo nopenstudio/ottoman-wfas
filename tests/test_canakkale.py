@@ -19,7 +19,7 @@ from module_animations import animations
 from module_scripts import scripts
 from module_mission_templates import mission_templates
 from module_canakkale import canakkale_scripts, canakkale_mission_triggers
-from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_trigger
+from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_triggers
 
 BASE = '27989be0cad49d55055e44af8bbc293f5ece95d1'
 I = dict((x[0], x) for x in items)
@@ -207,7 +207,7 @@ class SourceTests(unittest.TestCase):
             if after[0] in wanted:
                 expected = before[5] + canakkale_mission_triggers
                 if after[0] == "multiplayer_tdm" and fire_orders_poc_enabled:
-                    expected += [fire_orders_poc_trigger]
+                    expected += fire_orders_poc_triggers
                 self.assertEqual(after[5], expected)
             else:self.assertEqual(after,before)
     def test_no_ammo_rewrite_or_untrusted_client_command(self):

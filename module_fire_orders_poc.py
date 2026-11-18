@@ -2,10 +2,14 @@
 import os
 
 from header_mission_templates import *
-from module_constants import slot_agent_canakkale_bolt_until
+from module_constants import (slot_agent_canakkale_bolt_until,
+                              slot_player_captain_bot_data_end)
 
 fire_orders_poc_enabled = os.environ.get("WFAS_FIRE_ORDERS_POC") == "1"
 fire_orders_poc_event = 121
+fire_orders_poc_interval_ms = 350
+# Player slot 52. Stock Captain data uses the half-open range [40, 52).
+slot_player_fire_orders_stamp = slot_player_captain_bot_data_end
 fire_orders_poc_keys = (
     (key_f8, 0),  # read-only snapshot, including for the native-order control
     (key_f9, 1),  # request paired melee item
@@ -41,6 +45,21 @@ fire_orders_poc_trigger = (0, 0, 0, [], [
     (multiplayer_send_2_int_to_server, fire_orders_poc_event, ":mask", ":action"),
 ])
 
+fire_orders_poc_triggers = [
+    fire_orders_poc_trigger,
+    (ti_before_mission_start, 0, 0, [multiplayer_is_dedicated_server], [
+        (get_max_players, ":player_limit"),
+        (try_for_range, ":player_no", 1, ":player_limit"),
+            (player_is_active, ":player_no"),
+            (player_set_slot, ":player_no", slot_player_fire_orders_stamp, 0),
+        (try_end),
+    ]),
+    (ti_server_player_joined, 0, 0, [multiplayer_is_dedicated_server], [
+        (store_trigger_param_1, ":player_no"),
+        (player_set_slot, ":player_no", slot_player_fire_orders_stamp, 0),
+    ]),
+]
+
 fire_orders_poc_receive = [
     (eq, ":event_type", fire_orders_poc_event),
     (multiplayer_is_server),
@@ -66,6 +85,15 @@ fire_orders_poc_receive = [
     (is_between, ":mask", 1, 1 << grc_everyone),
     (is_between, ":action", 0, 3),
     (store_mission_timer_a_msec, ":now"),
+    # Store time + 1 so a request at mission time zero still consumes its turn.
+    (player_get_slot, ":last_stamp", ":player_no", slot_player_fire_orders_stamp),
+    (store_sub, ":last_time", ":last_stamp", 1),
+    (store_add, ":next_time", ":last_time", fire_orders_poc_interval_ms),
+    (this_or_next|eq, ":last_stamp", 0),
+    (this_or_next|lt, ":now", ":last_time"),
+    (ge, ":now", ":next_time"),
+    (store_add, ":stamp", ":now", 1),
+    (player_set_slot, ":player_no", slot_player_fire_orders_stamp, ":stamp"),
     (try_for_agents, ":bot"),
         (agent_is_active, ":bot"),
         (agent_is_alive, ":bot"),

@@ -1,9 +1,49 @@
 # SS1914-ORDERS-001 — Stage A deneyi
 
-Durum **STAGE_A_POC_READY / GAME BLOCKED / USER TEST REQUIRED**. WFaS 1.143
+Durum **P1_REWORK_READY / GAME BLOCKED / USER TEST REQUIRED**. WFaS 1.143
 istemcisi ve dedicated server bu ortamda çalıştırılamadı. Başlangıç
 `f5aa5088bd3a81c924cf99ee3177476393feeceb`. Deney yalnız derleme sırasında
 `WFAS_FIRE_ORDERS_POC=1` verildiğinde ve normal dedicated Team Deathmatch'te çalışır.
+
+## Event 121 hız sınırı
+
+F8, F9 ve F10 oyuncu başına tek bir 350 ms aralığını paylaşır. Sunucu oyuncu,
+takım, maske ve action doğrulamasından sonra ve bot taramasından önce kendi görev
+saatini kullanır. Ret bot döngüsüne veya log üretimine ulaşmaz. Slot 52 son kabulün
+zamanını +1 olarak tutar. Sıfır boş durumdur, dolayısıyla görev saati 0 ms iken
+ilk istek alınır. Görev başlangıcında aktif oyuncular, katılımda ilgili oyuncu
+sıfırlanır. Saat geri sararsa ilk geçerli istek yeni aralığı başlatır.
+
+Slot denetimi: `rg -n 'slot_player_.*=|slot_player_captain_bot_data_end' --glob '*.py'`.
+Stok Captain bot slotları [40, 52) aralığındadır. Bu aralığı kullanan kaynak
+döngüleri ve `is_between` kontrolleri üst sınırı dışlar. Diğer stok oyuncu
+slotları 0–39 aralığındadır.
+
+## Derleme kanıtını yeniden üret
+
+Aşağıdaki komutları PR HEAD checkout'unda çalıştır. `PYPY2` için PyPy2 yolunu ver.
+
+```sh
+set -eu
+work=$(mktemp -d)
+git worktree add --detach "$work/base" f5aa5088bd3a81c924cf99ee3177476393feeceb
+for flag in 0 1; do
+  WFAS_FIRE_ORDERS_POC=$flag "$PYPY2" -m unittest discover -s tests -v
+  WFAS_FIRE_ORDERS_POC=$flag python3 tools/build_module.py --python2 "$PYPY2" --output "$work/$flag"
+done
+WFAS_FIRE_ORDERS_POC=0 python3 "$work/base/tools/build_module.py" --python2 "$PYPY2" --output "$work/baseline"
+for build in baseline 0 1; do
+  (cd "$work/$build" && LC_ALL=C sha256sum *.txt) > "$work/$build.sha256"
+done
+test "$(wc -l < "$work/baseline.sha256")" -eq 32
+cmp "$work/baseline.sha256" "$work/0.sha256"
+for file in "$work/baseline/"*.txt; do
+  cmp "$file" "$work/0/${file##*/}"
+done
+```
+
+Hız sınırı testleri gerçek Module System işlem listelerini bir modelde yürütür.
+WFaS ağ taşımacılığı ve motor çalışma sırası oyun ortamında doğrulanmayı bekler.
 
 ## Motor sorusu
 
