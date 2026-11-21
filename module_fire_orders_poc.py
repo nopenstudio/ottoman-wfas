@@ -7,6 +7,7 @@ from module_constants import (slot_agent_canakkale_bolt_until,
 
 fire_orders_poc_enabled = os.environ.get("WFAS_FIRE_ORDERS_POC") == "1"
 fire_orders_poc_event = 121
+fire_orders_poc_result_event = 122
 fire_orders_poc_interval_ms = 350
 # Player slot 52. Stock Captain data uses the half-open range [40, 52).
 slot_player_fire_orders_stamp = slot_player_captain_bot_data_end
@@ -16,14 +17,22 @@ fire_orders_poc_keys = (
     (key_f10, 2),  # request original ranged item
 )
 
-fire_orders_poc_trigger = (0, 0, 0, [], [
-    (neg|multiplayer_is_server),
+# Poll only the three debug keys; never capture input or open a presentation.
+fire_orders_poc_key_conditions = [
+    (neg|multiplayer_is_dedicated_server),
     (neg|is_presentation_active, "prsnt_multiplayer_escape_menu"),
-    (get_player_agent_no, ":commander"),
-    (ge, ":commander", 0),
-    (agent_is_alive, ":commander"),
-    (agent_get_team, ":team", ":commander"),
-    (is_between, ":team", 0, 2),
+    (neg|is_presentation_active, "prsnt_multiplayer_poll_menu"),
+    (this_or_next|key_clicked, key_f8),
+    (this_or_next|key_clicked, key_f9),
+    (key_clicked, key_f10),
+]
+
+fire_orders_poc_unsupported_trigger = (
+    0, 0, 0.35, fire_orders_poc_key_conditions,
+    [(display_message, "@SS1914: Test yalniz dedicated Takim Olum Maci icin.")],
+)
+
+fire_orders_poc_trigger = (0, 0, 0.35, fire_orders_poc_key_conditions, [
     (assign, ":action", -1),
 ] + [
     op for key, action in fire_orders_poc_keys for op in [
@@ -34,19 +43,46 @@ fire_orders_poc_trigger = (0, 0, 0, [], [
     ]
 ] + [
     (ge, ":action", 0),
-    (assign, ":mask", 0),
-    (try_for_range, ":division", 0, grc_everyone),
-        (class_is_listening_order, ":team", ":division"),
-        (assign, ":bit", 1),
-        (val_lshift, ":bit", ":division"),
-        (val_or, ":mask", ":bit"),
+    (get_player_agent_no, ":commander"),
+    (assign, ":alive", 0),
+    (try_begin),
+        (ge, ":commander", 0),
+        (agent_is_alive, ":commander"),
+        (assign, ":alive", 1),
     (try_end),
-    (gt, ":mask", 0),
-    (multiplayer_send_2_int_to_server, fire_orders_poc_event, ":mask", ":action"),
+    (try_begin),
+        (multiplayer_is_server),
+        (display_message, "@SS1914: Dedicated sunucu gerekli."),
+    (else_try),
+        (eq, ":alive", 0),
+        (display_message, "@SS1914: Once canli olarak oyuna gir."),
+    (else_try),
+        (agent_get_team, ":team", ":commander"),
+        (is_between, ":team", 0, 2),
+        (assign, ":mask", 0),
+        (try_for_range, ":division", 0, grc_everyone),
+            (class_is_listening_order, ":team", ":division"),
+            (assign, ":bit", 1),
+            (val_lshift, ":bit", ":division"),
+            (val_or, ":mask", ":bit"),
+        (try_end),
+        (try_begin),
+            (eq, ":mask", 0),
+            (display_message, "@SS1914: Once bir bot grubu sec."),
+        (else_try),
+            (multiplayer_send_2_int_to_server, fire_orders_poc_event, ":mask", ":action"),
+            (assign, reg0, ":action"),
+            (val_add, reg0, 8),
+            (display_message, "@SS1914 F{reg0}: Istek sunucuya gonderildi."),
+        (try_end),
+    (try_end),
 ])
 
 fire_orders_poc_triggers = [
     fire_orders_poc_trigger,
+    (ti_after_mission_start, 0, 0, [neg|multiplayer_is_server], [
+        (display_message, "@SS1914 TEST AKTIF - F8 Durum / F9 Sungu / F10 Tufek"),
+    ]),
     (ti_before_mission_start, 0, 0, [multiplayer_is_dedicated_server], [
         (get_max_players, ":player_limit"),
         (try_for_range, ":player_no", 1, ":player_limit"),
@@ -94,6 +130,11 @@ fire_orders_poc_receive = [
     (ge, ":now", ":next_time"),
     (store_add, ":stamp", ":now", 1),
     (player_set_slot, ":player_no", slot_player_fire_orders_stamp, ":stamp"),
+    (assign, ":selected_count", 0),
+    (assign, ":target_count", 0),
+    (assign, ":attempt_count", 0),
+    (assign, ":rifle_count", 0),
+    (assign, ":melee_count", 0),
     (try_for_agents, ":bot"),
         (agent_is_active, ":bot"),
         (agent_is_alive, ":bot"),
@@ -109,6 +150,7 @@ fire_orders_poc_receive = [
         (val_lshift, ":selected", ":division"),
         (val_and, ":selected", ":mask"),
         (neq, ":selected", 0),
+        (val_add, ":selected_count", 1),
         (agent_get_troop_id, ":troop", ":bot"),
         (assign, ":rifle", -1),
         (try_begin),
@@ -132,6 +174,14 @@ fire_orders_poc_receive = [
         (try_end),
         (eq, ":matches", 1),
         (agent_get_wielded_item, ":before", ":bot", 0),
+        (val_add, ":target_count", 1),
+        (try_begin),
+            (eq, ":before", ":rifle"),
+            (val_add, ":rifle_count", 1),
+        (else_try),
+            (eq, ":before", ":melee"),
+            (val_add, ":melee_count", 1),
+        (try_end),
         (agent_get_ammo, reg10, ":bot", 1),
         (agent_get_slot, ":deadline", ":bot", slot_agent_canakkale_bolt_until),
         (assign, ":requested", -1),
@@ -150,6 +200,10 @@ fire_orders_poc_receive = [
             (this_or_next|neq, ":action", 1),
             (neq, ":before", ":melee"),
             (agent_set_wielded_item, ":bot", ":requested"),
+            # A stowed rifle is only readied by F9; no melee switch was tried.
+            (this_or_next|eq, ":action", 2),
+            (eq, ":requested", ":melee"),
+            (val_add, ":attempt_count", 1),
         (try_end),
         (agent_get_wielded_item, ":after", ":bot", 0),
         (agent_get_ammo, reg8, ":bot", 1),
@@ -163,5 +217,46 @@ fire_orders_poc_receive = [
         (assign, reg6, ":after"),
         (assign, reg7, ":deadline"),
         (server_add_message_to_log, "@SS1914 owner={reg0} bot={reg1} division={reg2} action={reg3} before={reg4} request={reg5} after={reg6} deadline={reg7} ammo_before={reg10} ammo_after={reg8} native_usage={reg9}"),
+    (try_end),
+]
+
+# Only the request owner receives a result, once per admitted request.
+fire_orders_poc_receive += [
+    (try_begin),
+        (eq, ":action", 0),
+        (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
+         ":action", ":selected_count", ":rifle_count", ":melee_count"),
+    (else_try),
+        (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
+         ":action", ":selected_count", ":target_count", ":attempt_count"),
+    (try_end),
+    (else_try),
+    (eq, ":event_type", fire_orders_poc_result_event),
+    (neg|multiplayer_is_server),
+    (eq, ":player_no", 0),
+    (store_script_param, ":action", 3),
+    (is_between, ":action", 0, 3),
+    (store_script_param, ":selected_count", 4),
+    (store_script_param, ":count_a", 5),
+    (store_script_param, ":count_b", 6),
+    (assign, reg0, ":selected_count"),
+    (assign, reg1, ":count_a"),
+    (assign, reg2, ":count_b"),
+    (try_begin),
+        (eq, reg0, 0),
+        (display_message, "@SS1914 Sunucu: Secili canli bot yok."),
+    (else_try),
+        (eq, ":action", 0),
+        (store_sub, reg3, reg0, reg1),
+        (val_sub, reg3, reg2),
+        (display_message, "@SS1914 F8 Kabul: Bot {reg0}, tufek {reg1}, sungu {reg2}, diger {reg3}."),
+    (else_try),
+        (eq, reg1, 0),
+        (display_message, "@SS1914 Sunucu: Secimde uygun tufekli bot yok."),
+    (else_try),
+        (eq, ":action", 1),
+        (display_message, "@SS1914 F9 Kabul: Sungu hedefi {reg1}, gecis denemesi {reg2}."),
+    (else_try),
+        (display_message, "@SS1914 F10 Kabul: Tufek hedefi {reg1}, donus denemesi {reg2}."),
     (try_end),
 ]

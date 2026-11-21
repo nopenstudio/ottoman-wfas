@@ -7,10 +7,11 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from header_operations import *
-from header_triggers import ti_before_mission_start, ti_server_player_joined
+from header_triggers import key_f8, ti_before_mission_start, ti_server_player_joined
 from module_fire_orders_poc import (
     fire_orders_poc_enabled, fire_orders_poc_event, fire_orders_poc_receive,
-    fire_orders_poc_interval_ms, fire_orders_poc_triggers,
+    fire_orders_poc_interval_ms, fire_orders_poc_triggers, fire_orders_poc_result_event,
+    fire_orders_poc_trigger, fire_orders_poc_unsupported_trigger,
 )
 from module_mission_templates import mission_templates
 from module_scripts import scripts
@@ -66,6 +67,12 @@ class RequestModel(object):
     def __init__(self):
         self.slots = {}
         self.scans = self.logs = 0
+        self.replies = []
+        self.messages = []
+        self.server = True
+        self.commander = 11
+        self.selection = [0]
+        self.sent = []
         self.players = {1: 11, 2: 12}
         self.owner = 1
         self.now = 0
@@ -77,6 +84,17 @@ class RequestModel(object):
             "$g_multiplayer_game_type": 1, "$g_multiplayer_is_game_type_captain": 0,
         }
         self.execute(parse(fire_orders_poc_receive)[0], values, [player, fire_orders_poc_event, mask, action])
+
+    def deliver(self, sender, payload):
+        condition = (eq, ":event_type", fire_orders_poc_result_event)
+        start = fire_orders_poc_receive.index(condition)
+        values = {":player_no": sender, ":event_type": fire_orders_poc_result_event}
+        self.execute(parse(fire_orders_poc_receive[start:])[0], values,
+                     [sender, fire_orders_poc_result_event] + list(payload))
+
+    def press_f8(self, trigger=fire_orders_poc_trigger):
+        self.server = False
+        self.execute(parse(trigger[3] + trigger[4])[0], {}, [])
 
     def reset(self, event, player=1):
         trigger = next(t for t in fire_orders_poc_triggers if t[0] == event)
@@ -111,7 +129,19 @@ class RequestModel(object):
             code &= ~(neg | this_or_next)
             a = [get(arg) for arg in args]
             result = True
-            if code in (multiplayer_is_server, multiplayer_is_dedicated_server,
+            if code == multiplayer_is_server:
+                result = self.server
+            elif code == multiplayer_is_dedicated_server:
+                result = self.server
+            elif code == is_presentation_active:
+                result = False
+            elif code == key_clicked:
+                result = a[0] == key_f8
+            elif code == class_is_listening_order:
+                result = a[1] in self.selection
+            elif code == get_player_agent_no:
+                values[args[0]] = self.commander
+            elif code in (
                         game_in_multiplayer_mode, agent_is_active, agent_is_alive, agent_is_human):
                 pass
             elif code in (eq, neq, lt, ge, gt):
@@ -142,9 +172,10 @@ class RequestModel(object):
                 self.slots[tuple(a[:2])] = a[2]
             elif code in (store_add, store_sub):
                 values[args[0]] = a[1] + a[2] if code == store_add else a[1] - a[2]
-            elif code in (val_lshift, val_and, val_add):
+            elif code in (val_lshift, val_and, val_or, val_add, val_sub):
                 values[args[0]] = {val_lshift: operator.lshift, val_and: operator.and_,
-                                  val_add: operator.add}[code](*a)
+                                  val_or: operator.or_, val_add: operator.add,
+                                  val_sub: operator.sub}[code](*a)
             elif code == assign:
                 values[args[0]] = a[1]
             elif code == agent_get_group:
@@ -157,6 +188,12 @@ class RequestModel(object):
                 values[args[0]] = self.weapon
             elif code == agent_set_wielded_item:
                 self.weapon = a[1]
+            elif code == multiplayer_send_2_int_to_server:
+                self.sent.append(tuple(a))
+            elif code == multiplayer_send_4_int_to_player:
+                self.replies.append(tuple(a))
+            elif code == display_message:
+                self.messages.append(a[0])
             elif code == server_add_message_to_log:
                 self.logs += 1
             else:
@@ -239,6 +276,68 @@ class RateLimitTests(unittest.TestCase):
         self.assertEqual((model.scans, model.logs, model.slots), (0, 0, {}))
         model.request()
         self.assertEqual((model.scans, model.logs), (1, 1))
+
+
+class StatusMessageTests(unittest.TestCase):
+    def test_local_feedback_distinguishes_send_and_unavailable_states(self):
+        model = RequestModel()
+        model.press_f8(fire_orders_poc_unsupported_trigger)
+        model.commander = -1
+        model.press_f8()
+        model.commander = 11
+        model.selection = []
+        model.press_f8()
+        self.assertEqual(model.sent, [])
+        model.selection = [0]
+        model.press_f8()
+        self.assertEqual(model.sent, [(fire_orders_poc_event, 1, 0)])
+        self.assertIn("Takim Olum Maci", model.messages[0])
+        self.assertIn("canli", model.messages[1])
+        self.assertIn("bot grubu sec", model.messages[2])
+        self.assertIn("gonderildi", model.messages[3])
+        for msg in model.messages:
+            msg.decode("ascii")
+
+
+    def test_reply_is_private_and_limited_to_one_per_admitted_request(self):
+        model = RequestModel()
+        model.request()
+        model.request(action=1)
+        model.request(player=2)
+        model.request(player=3)
+        self.assertEqual(model.replies, [
+            (1, fire_orders_poc_result_event, 0, 1, 1, 0),
+            (2, fire_orders_poc_result_event, 0, 0, 0, 0),
+        ])
+
+    def test_attempt_count_excludes_readying_and_already_selected_mode(self):
+        model = RequestModel()
+        model.weapon = -1
+        for action in (1, 1, 1, 0, 2):
+            model.request(action=action)
+            model.now += fire_orders_poc_interval_ms
+        self.assertEqual([reply[2:] for reply in model.replies], [
+            (1, 1, 1, 0), (1, 1, 1, 1), (1, 1, 1, 0),
+            (0, 1, 0, 1), (2, 1, 1, 1),
+        ])
+
+    def test_reply_display_requires_server_sender_and_client_context(self):
+        model = RequestModel()
+        model.deliver(0, (0, 1, 1, 0))
+        model.server = False
+        model.deliver(2, (0, 1, 1, 0))
+        model.deliver(0, (3, 1, 1, 0))
+        self.assertEqual(model.messages, [])
+        for payload in ((0, 0, 0, 0), (0, 1, 1, 0), (1, 1, 1, 0), (2, 1, 1, 1)):
+            model.deliver(0, payload)
+        self.assertEqual(len(model.messages), 4)
+        self.assertIn("Secili canli bot yok", model.messages[0])
+        self.assertIn("F8 Kabul", model.messages[1])
+        self.assertIn("gecis denemesi", model.messages[2])
+        self.assertIn("donus denemesi", model.messages[3])
+        for msg in model.messages:
+            self.assertEqual(msg.decode("ascii"), msg)
+            self.assertNotIn("BASARILI", msg)
 
 
 if __name__ == "__main__":

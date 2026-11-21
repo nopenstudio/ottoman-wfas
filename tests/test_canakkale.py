@@ -19,7 +19,8 @@ from module_animations import animations
 from module_scripts import scripts
 from module_mission_templates import mission_templates
 from module_canakkale import canakkale_scripts, canakkale_mission_triggers
-from module_fire_orders_poc import fire_orders_poc_enabled, fire_orders_poc_triggers
+from module_fire_orders_poc import (fire_orders_poc_enabled, fire_orders_poc_triggers,
+                                    fire_orders_poc_unsupported_trigger)
 
 BASE = '27989be0cad49d55055e44af8bbc293f5ece95d1'
 I = dict((x[0], x) for x in items)
@@ -204,12 +205,14 @@ class SourceTests(unittest.TestCase):
         old=baseline('module_mission_templates.py','mission_templates')
         wanted=set(['multiplayer_dm','multiplayer_tdm','multiplayer_cf','multiplayer_sg','multiplayer_bt','multiplayer_duel'])
         for before,after in zip(old,mission_templates):
+            expected = list(before[5])
             if after[0] in wanted:
-                expected = before[5] + canakkale_mission_triggers
-                if after[0] == "multiplayer_tdm" and fire_orders_poc_enabled:
-                    expected += fire_orders_poc_triggers
-                self.assertEqual(after[5], expected)
-            else:self.assertEqual(after,before)
+                expected += canakkale_mission_triggers
+            if fire_orders_poc_enabled and after[0].startswith("multiplayer_"):
+                expected += (fire_orders_poc_triggers if after[0] == "multiplayer_tdm"
+                             else [fire_orders_poc_unsupported_trigger])
+            self.assertEqual(after[:5], before[:5])
+            self.assertEqual(after[5], expected)
     def test_no_ammo_rewrite_or_untrusted_client_command(self):
         forbidden=set([agent_set_ammo,agent_refill_ammo,agent_equip_item,agent_unequip_item])
         for name,ops in canakkale_scripts:
