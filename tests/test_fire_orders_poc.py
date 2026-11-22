@@ -13,7 +13,8 @@ from module_fire_orders_poc import (
     fire_orders_poc_enabled, fire_orders_poc_event, fire_orders_poc_request,
     fire_orders_poc_interval_ms, fire_orders_poc_triggers, fire_orders_poc_result_event,
     fire_orders_poc_unsupported_triggers, result_wait_reload, result_wait_bolt,
-    result_swap_blocked, fire_orders_poc_dispatch, fire_orders_poc_scripts,
+    native_bayonet_order, native_bayonet_experiment, result_native_sent,
+    result_native_refused, result_swap_blocked, fire_orders_poc_dispatch, fire_orders_poc_scripts,
 )
 from module_mission_templates import mission_templates
 from module_scripts import scripts
@@ -81,6 +82,11 @@ class RequestModel(object):
         self.sent = []
         self.players = {1: 11, 2: 12}
         self.owner = 1
+        self.agents = [20]
+        self.foreign = set()
+        self.divisions = {}
+        self.password = ""
+        self.orders = []
         self.now = 0
         self.deadline = 0
         self.attack_state = 0
@@ -126,7 +132,7 @@ class RequestModel(object):
                 else:
                     if code == try_for_agents:
                         self.scans += 1
-                        members = [20]
+                        members = self.agents
                     else:
                         members = range(get(args[1]), get(args[2]))
                     for member in members:
@@ -145,7 +151,9 @@ class RequestModel(object):
             elif code == multiplayer_get_my_player:
                 values[args[0]] = self.local_player
             elif code == call_script:
-                if a[0] == "script_cf_ss1914_fire_order_result":
+                if a[0] == "script_cf_ss1914_native_bayonet_order":
+                    result = self.execute(parse(native_bayonet_order)[0], dict(values), a[1:])
+                elif a[0] == "script_cf_ss1914_fire_order_result":
                     self.execute(parse(fire_orders_poc_scripts[1][1])[0], {}, a[1:])
                 else:
                     assert a[0] == "script_game_receive_network_message"
@@ -161,6 +169,9 @@ class RequestModel(object):
             elif code in (
                         game_in_multiplayer_mode, agent_is_active, agent_is_alive, agent_is_human):
                 pass
+            elif code == ge and isinstance(a[0], str) and isinstance(a[1], int):
+                # Item names stand in for nonnegative item IDs in this model.
+                result = a[1] <= 0
             elif code in (eq, neq, lt, ge, gt):
                 result = {eq: operator.eq, neq: operator.ne, lt: operator.lt,
                           ge: operator.ge, gt: operator.gt}[code](*a)
@@ -169,14 +180,22 @@ class RequestModel(object):
             elif code == player_is_active:
                 result = a[0] in self.players
             elif code == agent_is_non_player:
-                result = a[0] == 20
+                result = a[0] >= 20
+            elif code == str_store_server_password:
+                self.strings[args[0]] = self.password
+            elif code == str_is_empty:
+                result = not self.strings.get(args[0], "")
+            elif code == team_give_order:
+                self.orders.append(tuple(a))
             elif code == get_max_players:
                 values[args[0]] = 4
             elif code == agent_get_slot:
                 values[args[0]] = self.deadline
             elif code == agent_get_attack_action:
                 values[args[0]] = self.attack_state
-            elif code in (player_get_team_no, agent_get_team, agent_get_division,
+            elif code == agent_get_division:
+                values[args[0]] = self.divisions.get(a[1], 0)
+            elif code in (player_get_team_no, agent_get_team,
                           agent_get_ammo, team_get_weapon_usage_order):
                 values[args[0]] = 0
             elif code == player_get_agent_id:
@@ -200,11 +219,11 @@ class RequestModel(object):
             elif code == assign:
                 values[args[0]] = a[1]
             elif code == agent_get_group:
-                values[args[0]] = self.owner
+                values[args[0]] = -1 if a[1] in self.foreign else self.owner
             elif code == agent_get_troop_id:
                 values[args[0]] = "trp_khergit_dismounted_lancer_multiplayer_ai"
             elif code == agent_get_item_slot:
-                values[args[0]] = "itm_canakkale_turk_rifle" if a[2] == 0 else -1
+                values[args[0]] = {0: "itm_canakkale_turk_rifle", 1: "itm_canakkale_bullets"}.get(a[2], -1)
             elif code == agent_get_wielded_item:
                 values[args[0]] = self.weapon
             elif code == agent_set_wielded_item:
@@ -401,6 +420,75 @@ class StatusMessageTests(unittest.TestCase):
         for msg in model.messages:
             self.assertEqual(msg.decode("ascii"), msg)
             self.assertNotIn("BASARILI: 1", msg)
+
+
+class NativeBayonetGateTests(unittest.TestCase):
+    def setUp(self):
+        self.model = RequestModel()
+        self.model.players = {1: 11}
+        self.model.password = "private"
+
+    def run_order(self, mask=1, action=1):
+        return self.model.execute(parse(native_bayonet_order)[0],
+                                  {"$g_multiplayer_game_type": 1,
+                                   "$g_multiplayer_is_game_type_captain": 0},
+                                  [1, 0, mask, action, 1000])
+
+    def test_single_owned_division_emits_only_the_requested_native_order(self):
+        self.model.agents = [11, 20]
+        self.model.divisions[11] = 3
+        self.assertTrue(self.run_order())
+        self.assertTrue(self.run_order(action=2))
+        self.assertEqual(self.model.orders, [(0, 0, 10), (0, 0, 11)])
+        self.assertEqual(self.model.wield_calls, [])
+        self.assertEqual(self.model.strings[s0], "")
+
+    @unittest.skipUnless(native_bayonet_experiment, "requires experimental build flag")
+    def test_dispatch_reports_order_and_refusal_without_claiming_mode_change(self):
+        model = self.model
+        self.assertIn("cf_ss1914_native_bayonet_order", dict(scripts))
+        model.request(action=1)
+        self.assertEqual(model.orders, [(0, 0, 10)])
+        self.assertTrue(model.replies[-1][2] & result_native_sent)
+        model.now += fire_orders_poc_interval_ms
+        model.players[2] = -1
+        model.request(action=2)
+        self.assertEqual(len(model.orders), 1)
+        self.assertTrue(model.replies[-1][2] & result_native_refused)
+        model.server = False
+        for reply in model.replies:
+            model.deliver(0, reply[2:])
+        self.assertIn("Native emir cagrildi", model.messages[0])
+        self.assertIn("RED:", model.messages[1])
+
+    def test_second_active_player_blocks_even_without_an_agent(self):
+        self.model.players[2] = -1
+        self.assertFalse(self.run_order())
+        self.assertEqual(self.model.orders, [])
+
+    def test_human_or_foreign_bot_in_target_division_blocks(self):
+        self.model.agents = [11, 20]
+        self.assertFalse(self.run_order())
+        self.model.agents = [20, 21]
+        self.model.foreign.add(21)
+        self.assertFalse(self.run_order())
+        self.assertEqual(self.model.orders, [])
+
+    def test_public_listen_combined_empty_and_busy_requests_block(self):
+        self.model.password = ""
+        self.assertFalse(self.run_order())
+        self.model.password = "private"
+        self.model.dedicated = False
+        self.assertFalse(self.run_order())
+        self.model.dedicated = True
+        self.assertFalse(self.run_order(mask=3))
+        self.assertFalse(self.run_order(mask=2))
+        self.model.attack_state = 5
+        self.assertFalse(self.run_order())
+        self.model.attack_state = 0
+        self.model.deadline = 1001
+        self.assertFalse(self.run_order())
+        self.assertEqual(self.model.orders, [])
 
 
 if __name__ == "__main__":

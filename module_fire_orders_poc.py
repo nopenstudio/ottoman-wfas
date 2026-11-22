@@ -6,6 +6,9 @@ from module_constants import (slot_agent_canakkale_bolt_until,
                               slot_player_captain_bot_data_end)
 
 fire_orders_poc_enabled = os.environ.get("WFAS_FIRE_ORDERS_POC") == "1"
+native_bayonet_experiment = os.environ.get("WFAS_NATIVE_BAYONET_EXPERIMENT") == "1"
+result_native_sent = 32
+result_native_refused = 64
 fire_orders_poc_event = 121
 fire_orders_poc_result_event = 122
 fire_orders_poc_interval_ms = 350
@@ -95,6 +98,109 @@ fire_orders_poc_triggers = key_triggers([
     ]),
 ]
 
+# A conditional server script. Do not reuse a division order in public MP.
+native_bayonet_order = [
+    (store_script_param, ":player_no", 1),
+    (store_script_param, ":team", 2),
+    (store_script_param, ":mask", 3),
+    (store_script_param, ":action", 4),
+    (store_script_param, ":now", 5),
+    (multiplayer_is_server),
+    (multiplayer_is_dedicated_server),
+    (eq, "$g_multiplayer_game_type", multiplayer_game_type_team_deathmatch),
+    (eq, "$g_multiplayer_is_game_type_captain", 0),
+    (is_between, ":action", 1, 3),
+    (str_store_server_password, s0),
+    (assign, ":private", 0),
+    (try_begin),
+        (neg|str_is_empty, s0),
+        (assign, ":private", 1),
+    (try_end),
+    (str_clear, s0),
+    (eq, ":private", 1),
+    (get_max_players, ":limit"),
+    (assign, ":humans", 0),
+    (try_for_range, ":player", 1, ":limit"),
+        (player_is_active, ":player"),
+        (val_add, ":humans", 1),
+    (try_end),
+    (eq, ":humans", 1),
+    (player_is_active, ":player_no"),
+    # Accept exactly one real division, never a combined selection.
+    (assign, ":division", -1),
+    (try_for_range, ":candidate", 0, grc_everyone),
+        (assign, ":bit", 1),
+        (val_lshift, ":bit", ":candidate"),
+        (eq, ":mask", ":bit"),
+        (assign, ":division", ":candidate"),
+    (try_end),
+    (ge, ":division", 0),
+    (assign, ":members", 0),
+    (assign, ":eligible", 0),
+    (try_for_agents, ":agent"),
+        (agent_is_active, ":agent"),
+        (agent_is_alive, ":agent"),
+        (agent_get_team, ":agent_team", ":agent"),
+        (eq, ":agent_team", ":team"),
+        (agent_get_division, ":agent_division", ":agent"),
+        (eq, ":agent_division", ":division"),
+        (val_add, ":members", 1),
+        (agent_is_non_player, ":agent"),
+        (agent_is_human, ":agent"),
+        (agent_get_group, ":owner", ":agent"),
+        (eq, ":owner", ":player_no"),
+        (agent_get_attack_action, ":attack", ":agent"),
+        (neq, ":attack", 5),
+        (agent_get_slot, ":deadline", ":agent", slot_agent_canakkale_bolt_until),
+        (ge, ":now", ":deadline"),
+        (agent_get_troop_id, ":troop", ":agent"),
+        (this_or_next|eq, ":troop", "trp_khergit_dismounted_lancer_multiplayer_ai"),
+        (eq, ":troop", "trp_nord_scout_multiplayer_ai"),
+        (assign, ":rifle_slots", 0),
+        (assign, ":weapon_slots", 0),
+        (try_for_range, ":slot", 0, 4),
+            (agent_get_item_slot, ":item", ":agent", ":slot"),
+            (ge, ":item", 0),
+            (neq, ":item", "itm_canakkale_bullets"),
+            (val_add, ":weapon_slots", 1),
+            (this_or_next|eq, ":item", "itm_canakkale_turk_rifle"),
+            (this_or_next|eq, ":item", "itm_canakkale_turk_rifle_melee"),
+            (this_or_next|eq, ":item", "itm_canakkale_british_rifle"),
+            (eq, ":item", "itm_canakkale_british_rifle_melee"),
+            (val_add, ":rifle_slots", 1),
+        (try_end),
+        (eq, ":rifle_slots", 1),
+        (eq, ":weapon_slots", 1),
+        (val_add, ":eligible", 1),
+    (try_end),
+    (gt, ":members", 0),
+    (eq, ":members", ":eligible"),
+    (assign, ":order", mordr_use_melee_weapons),
+    (try_begin),
+        (eq, ":action", 2),
+        (assign, ":order", mordr_use_ranged_weapons),
+    (try_end),
+    (team_give_order, ":team", ":division", ":order"),
+    (assign, reg0, ":division"),
+    (assign, reg1, ":order"),
+    (assign, reg2, ":members"),
+    (assign, reg3, ":now"),
+    (server_add_message_to_log, "@SS1914 NATIVE division={reg0} order={reg1} bots={reg2} ms={reg3}"),
+]
+
+native_bayonet_request = [
+    (try_begin),
+        (gt, ":action", 0),
+        (try_begin),
+            (call_script, "script_cf_ss1914_native_bayonet_order",
+             ":player_no", ":team", ":mask", ":action", ":now"),
+            (assign, ":result_flags", result_native_sent),
+        (else_try),
+            (assign, ":result_flags", result_native_refused),
+        (try_end),
+    (try_end),
+]
+
 fire_orders_poc_request = [
     (store_script_param, ":player_no", 1),
     (store_script_param, ":mask", 2),
@@ -139,6 +245,7 @@ fire_orders_poc_request = [
     (assign, ":target_count", 0),
     (assign, ":observed_count", 0),
     (assign, ":result_flags", 0),
+] + (native_bayonet_request if native_bayonet_experiment else []) + [
     (assign, ":rifle_count", 0),
     (assign, ":melee_count", 0),
     (try_for_agents, ":bot"),
@@ -219,8 +326,26 @@ fire_orders_poc_request = [
         (assign, reg4, ":before"),
         (assign, reg7, ":deadline"),
         (assign, reg11, ":attack_state"),
+    ] + ([
+        (assign, reg12, ":now"),
+        (server_add_message_to_log, "@SS1914 SAMPLE ms={reg12} owner={reg0} bot={reg1} division={reg2} action={reg3} wielded_item={reg4} usage_order={reg9} attack_state={reg11} bolt_until={reg7}"),
+    ] if native_bayonet_experiment else [
         (server_add_message_to_log, "@SS1914 owner={reg0} bot={reg1} division={reg2} action={reg3} before={reg4} deadline={reg7} attack_state={reg11} native_usage={reg9}"),
+    ]) + [
     (try_end),
+]
+
+native_bayonet_display = [
+    (else_try),
+        (assign, ":native_flag", ":result_flags"),
+        (val_and, ":native_flag", result_native_sent),
+        (neq, ":native_flag", 0),
+        (display_message, "@[SS1914] Native emir cagrildi. Anlik kayit logda. 1 sn sonra F8."),
+    (else_try),
+        (assign, ":native_flag", ":result_flags"),
+        (val_and, ":native_flag", result_native_refused),
+        (neq, ":native_flag", 0),
+        (display_message, "@[SS1914] RED: Ozel TDM, tek oyuncu, izole ve hazir bot division gerekli."),
 ]
 
 fire_orders_poc_display = [
@@ -235,6 +360,7 @@ fire_orders_poc_display = [
         (store_sub, reg3, reg0, reg1),
         (val_sub, reg3, reg2),
         (display_message, "@SS1914 F8 Kabul: Bot {reg0}, tufek {reg1}, sungu {reg2}, diger {reg3}."),
+] + (native_bayonet_display if native_bayonet_experiment else []) + [
     (else_try),
         (eq, reg1, 0),
         (display_message, "@SS1914 Sunucu: Secimde uygun tufekli bot yok."),
@@ -292,9 +418,11 @@ fire_orders_poc_result = [
     (store_script_param, ":selected_count", 2),
     (store_script_param, ":count_a", 3),
     (store_script_param, ":count_b", 4),
-    (is_between, ":action", 0, 32),
+    (is_between, ":action", 0, 128 if native_bayonet_experiment else 32),
     (assign, ":result_flags", ":action"),
-    (val_and, ":result_flags", result_wait_reload | result_wait_bolt | result_swap_blocked),
+    (val_and, ":result_flags",
+     result_wait_reload | result_wait_bolt | result_swap_blocked |
+     ((result_native_sent | result_native_refused) if native_bayonet_experiment else 0)),
     (val_and, ":action", 3),
     (is_between, ":action", 0, 3),
 ] + fire_orders_poc_display
@@ -303,7 +431,8 @@ fire_orders_poc_result = [
 fire_orders_poc_scripts = [
     ("cf_ss1914_fire_order_request", fire_orders_poc_request),
     ("cf_ss1914_fire_order_result", fire_orders_poc_result),
-]
+] + ([("cf_ss1914_native_bayonet_order", native_bayonet_order)]
+     if native_bayonet_experiment else [])
 
 fire_orders_poc_dispatch = [
     (eq, ":event_type", fire_orders_poc_event),
