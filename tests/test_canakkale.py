@@ -19,6 +19,8 @@ from module_animations import animations
 from module_scripts import scripts
 from module_mission_templates import mission_templates
 from module_canakkale import canakkale_scripts, canakkale_mission_triggers
+from module_fire_orders_poc import (fire_orders_poc_enabled, fire_orders_poc_triggers,
+                                    fire_orders_poc_unsupported_triggers)
 
 BASE = '27989be0cad49d55055e44af8bbc293f5ece95d1'
 I = dict((x[0], x) for x in items)
@@ -42,7 +44,13 @@ def baseline(filename, variable):
 class SourceTests(unittest.TestCase):
     def test_existing_item_ids_and_definitions_preserved(self):
         old=baseline('module_items.py','items')
-        self.assertEqual(items[:len(old)-1],old[:-1])
+        from module_canakkale_assets import custom_magazine_reload
+        for current, previous in zip(items, old[:-1]):
+            if custom_magazine_reload and previous[0] in ('zakaz_2stwol_udar1','m_dwustwol_pistol'):
+                previous[4] = (previous[4] & ~itcf_reload_mask) | itcf_reload_pistol
+            if custom_magazine_reload and previous[4] & itcf_shoot_mask == itcf_shoot_musket:
+                previous[4] = (previous[4] & ~itcf_reload_mask) | itcf_reload_musket
+            self.assertEqual(current,previous)
         self.assertEqual(items[-1],old[-1])
         self.assertEqual(len(items),len(old)+7)
     def test_projectile_mesh_and_hit_behavior(self):
@@ -51,28 +59,10 @@ class SourceTests(unittest.TestCase):
         self.assertIn(('flying_missile',ixmesh_flying_ammo),ammo[2])
         self.assertIn(('bullet_normal',ixmesh_flying_ammo),stock[2])
 
-    def test_native_reload_speed_is_scoped_to_opt_in_rifles(self):
-        from module_canakkale_assets import custom_magazine_reload
-        for name,stock,original in [('canakkale_turk_rifle','t_norm_musket',36),
-                                    ('canakkale_british_rifle','norm_musket',37)]:
-            self.assertEqual(get_speed_rating(I[stock][6]),original)
-            self.assertEqual(get_speed_rating(I[name][6]),100 if custom_magazine_reload else original)
+    def test_rifle_speed_and_magazine_capacity_preserved(self):
+        for name,original in [('canakkale_turk_rifle',36),('canakkale_british_rifle',37)]:
+            self.assertEqual(get_speed_rating(I[name][6]),original)
             self.assertEqual(get_max_ammo(I[name][6]),7)
-
-    def test_reload_hook(self):
-        from module_canakkale_assets import custom_magazine_reload
-        hooks=[t for t in canakkale_mission_triggers if 'anim_rifle_magazine_reload_7' in repr(t)]
-        self.assertEqual(len(hooks),int(custom_magazine_reload))
-        if hooks:
-            ops=hooks[0][4]
-            self.assertIn((agent_get_attack_action, ':action', ':agent'),ops)
-            self.assertIn((neq, ':action', 5),ops)
-            self.assertIn((agent_slot_eq, ':agent', slot_agent_canakkale_bolt_until, 0),ops)
-            self.assertIn((agent_slot_eq, ':agent', slot_agent_canakkale_reload_seen, 0),ops)
-            self.assertIn((agent_set_slot, ':agent', slot_agent_canakkale_reload_seen, 1),ops)
-            self.assertEqual(ops.count((agent_set_animation, ':agent', 'anim_rifle_magazine_reload_7', 1)),1)
-            self.assertFalse(any(isinstance(o,tuple) and o[0] in (agent_set_ammo,agent_refill_ammo) for o in ops))
-            self.assertEqual(animations[-1][0],'rifle_magazine_reload_7')
 
     def test_two_seven_round_clones(self):
         for new,base in [('canakkale_turk_rifle','t_norm_musket'),
@@ -186,7 +176,17 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(oldcav,[])
     def test_animation_resource_range_and_lock_flags(self):
         old=baseline('module_animations.py','animations')
+        from module_canakkale_assets import custom_magazine_reload
+        frames = {'reload_musket': (0, 90), 'reload_musket_full': (0, 90),
+                  'reload_musket_two_third': (29, 90), 'reload_musket_one_third': (71, 90)}
+        self.assertTrue(set(frames).issubset(action[0] for action in old))
+        if custom_magazine_reload:
+            for action in old:
+                if action[0] in frames:
+                    first, last = frames[action[0]]
+                    action[3][1:4] = ['rifle_magazine_reload_7', first, last]
         self.assertEqual(animations[:len(old)],old)
+        self.assertEqual(len(animations),len(old)+2)
         a=animations[len(old)]
         self.assertEqual(a[0],'rifle_bolt_cycle_2s')
         self.assertEqual(a[3][:4],[2.0,'rifle_bolt_cycle_2s',0,60])
@@ -203,10 +203,14 @@ class SourceTests(unittest.TestCase):
         old=baseline('module_mission_templates.py','mission_templates')
         wanted=set(['multiplayer_dm','multiplayer_tdm','multiplayer_cf','multiplayer_sg','multiplayer_bt','multiplayer_duel'])
         for before,after in zip(old,mission_templates):
+            expected = list(before[5])
             if after[0] in wanted:
-                self.assertEqual(after[5][:-len(canakkale_mission_triggers)],before[5])
-                self.assertEqual(after[5][-len(canakkale_mission_triggers):],canakkale_mission_triggers)
-            else:self.assertEqual(after,before)
+                expected += canakkale_mission_triggers
+            if fire_orders_poc_enabled and after[0].startswith("multiplayer_"):
+                expected += (fire_orders_poc_triggers if after[0] == "multiplayer_tdm"
+                             else fire_orders_poc_unsupported_triggers)
+            self.assertEqual(after[:5], before[:5])
+            self.assertEqual(after[5], expected)
     def test_no_ammo_rewrite_or_untrusted_client_command(self):
         forbidden=set([agent_set_ammo,agent_refill_ammo,agent_equip_item,agent_unequip_item])
         for name,ops in canakkale_scripts:

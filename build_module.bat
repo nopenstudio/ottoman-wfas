@@ -1,4 +1,6 @@
 @echo off
+setlocal
+if not defined WFAS_FIRE_ORDERS_POC set "WFAS_FIRE_ORDERS_POC=1"
 python process_init.py
 python process_global_variables.py
 python process_strings.py

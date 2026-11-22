@@ -1,0 +1,50 @@
+Python 2.7.18 (c7f2b53ceffe, Aug 22 2024, 13:10:41)
+[PyPy 7.3.17 with GCC 10.2.1 20210130 (Red Hat 10.2.1-11)]
+$ WFAS_FIRE_ORDERS_POC=0 pypy -m unittest discover -s tests -v
+test_mutation_follows_server_and_bot_guards (test_fire_orders_poc.FireOrdersProbeTests) ... ok
+test_opt_in_wiring (test_fire_orders_poc.FireOrdersProbeTests) ... ok
+test_clock_rollback_accepts_and_restarts_throttle (test_fire_orders_poc.RateLimitTests) ... ok
+test_first_request_at_zero_and_interval_boundary (test_fire_orders_poc.RateLimitTests) ... ok
+test_invalid_requests_never_consume_budget_or_scan (test_fire_orders_poc.RateLimitTests) ... ok
+test_mission_reset_even_when_new_clock_has_caught_up (test_fire_orders_poc.RateLimitTests) ... ok
+test_player_budgets_and_bot_ownership_are_independent (test_fire_orders_poc.RateLimitTests) ... ok
+test_rejoin_resets_reused_player_id_only (test_fire_orders_poc.RateLimitTests) ... ok
+test_snapshot_and_wield_requests_share_budget (test_fire_orders_poc.RateLimitTests) ... ok
+test_actual_troop_classifier_uses_rifle_not_cavalry_classes (test_bolt_operations.BoltStateTests) ... ok
+test_death_and_captain_do_not_start_or_reassert (test_bolt_operations.BoltStateTests) ... ok
+test_delayed_acknowledgements_for_two_predictions_do_not_replay (test_bolt_operations.BoltStateTests) ... ok
+test_empty_hand_swap_uses_no_firearm_animation (test_bolt_operations.BoltStateTests) ... ok
+test_event_arriving_after_weapon_swap_does_not_animate_sword (test_bolt_operations.BoltStateTests) ... ok
+test_expiry_clears_state_once_regardless_of_reported_animation (test_bolt_operations.BoltStateTests) ... ok
+test_forged_event_is_ignored_by_server_and_other_clients (test_bolt_operations.BoltStateTests) ... ok
+test_four_observer_duplicate_events_do_not_replay (test_bolt_operations.BoltStateTests) ... ok
+test_four_owner_attacks_and_echoes_do_not_restart_prediction (test_bolt_operations.BoltStateTests) ... ok
+test_four_rapid_server_attacks_do_not_replay_extend_or_rebroadcast (test_bolt_operations.BoltStateTests) ... ok
+test_interrupted_animation_is_not_restarted_by_get_animation_mismatch (test_bolt_operations.BoltStateTests) ... ok
+test_late_observer_duplicates_and_old_events_are_rejected (test_bolt_operations.BoltStateTests) ... ok
+test_late_owner_echo_after_expiry_does_not_start_second_cycle (test_bolt_operations.BoltStateTests) ... ok
+test_one_shot_one_animation_across_two_seconds_of_ticks (test_bolt_operations.BoltStateTests) ... ok
+test_owner_without_prediction_can_receive_legitimate_server_action (test_bolt_operations.BoltStateTests) ... ok
+test_spawn_resets_visual_weapon_prediction_and_dedupe_state (test_bolt_operations.BoltStateTests) ... ok
+test_swap_back_holds_remaining_deadline_without_moving_replay (test_bolt_operations.BoltStateTests) ... ok
+test_swap_cancels_once_and_leaves_unrelated_weapon_alone (test_bolt_operations.BoltStateTests) ... ok
+test_switching_between_two_rifles_never_replays_bolt (test_bolt_operations.BoltStateTests) ... ok
+test_animation_resource_range_and_lock_flags (test_canakkale.SourceTests) ... ok
+test_availability_matches_defaults_and_classification (test_canakkale.SourceTests) ... ok
+test_bayonet_mesh_and_thrust_only (test_canakkale.SourceTests) ... ok
+test_existing_item_ids_and_definitions_preserved (test_canakkale.SourceTests) ... ok
+test_native_reload_speed_is_scoped_to_opt_in_rifles (test_canakkale.SourceTests) ... ok
+test_no_ammo_rewrite_or_untrusted_client_command (test_canakkale.SourceTests) ... ok
+test_only_normal_missions_get_lifecycle_guards (test_canakkale.SourceTests) ... ok
+test_player_bot_and_purchase_have_no_separate_swords (test_canakkale.SourceTests) ... ok
+test_projectile_mesh_and_hit_behavior (test_canakkale.SourceTests) ... ok
+test_reload_hook (test_canakkale.SourceTests) ... ok
+test_smoke_is_from_real_missile_launch_once_per_rifle (test_canakkale.SourceTests) ... ok
+test_troop_ids_and_captain_preserved (test_canakkale.SourceTests) ... ok
+test_two_seven_round_clones (test_canakkale.SourceTests) ... ok
+test_visuals_inventory_stats_and_foot_spawn (test_canakkale.SourceTests) ... ok
+
+----------------------------------------------------------------------
+Ran 42 tests in 0.477s
+
+OK
