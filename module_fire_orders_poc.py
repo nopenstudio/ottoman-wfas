@@ -12,13 +12,13 @@ fire_orders_poc_interval_ms = 350
 # Result packet action occupies the low two bits. These flags share the field.
 result_wait_reload = 4
 result_wait_bolt = 8
-result_not_observed = 16
+result_swap_blocked = 16
 # Player slot 52. Stock Captain data uses the half-open range [40, 52).
 slot_player_fire_orders_stamp = slot_player_captain_bot_data_end
 fire_orders_poc_keys = (
-    (key_f8, 0),  # read-only snapshot, including for the native-order control
-    (key_f9, 1),  # request paired melee item
-    (key_f10, 2),  # request original ranged item
+    (key_f8, 0),  # read-only mode snapshot
+    (key_f9, 1),  # assess bayonet mode
+    (key_f10, 2),  # assess rifle mode
 )
 
 # Poll only the three debug keys; never capture input or open a presentation.
@@ -137,7 +137,6 @@ fire_orders_poc_request = [
     (player_set_slot, ":player_no", slot_player_fire_orders_stamp, ":stamp"),
     (assign, ":selected_count", 0),
     (assign, ":target_count", 0),
-    (assign, ":attempt_count", 0),
     (assign, ":observed_count", 0),
     (assign, ":result_flags", 0),
     (assign, ":rifle_count", 0),
@@ -189,59 +188,38 @@ fire_orders_poc_request = [
             (eq, ":before", ":melee"),
             (val_add, ":melee_count", 1),
         (try_end),
-        (agent_get_ammo, reg10, ":bot", 1),
         (agent_get_slot, ":deadline", ":bot", slot_agent_canakkale_bolt_until),
-        (assign, ":requested", -1),
-        (assign, ":attempted", 0),
-        (assign, ":desired", ":rifle"),
-        (try_begin),
-            (eq, ":action", 1),
-            (assign, ":desired", ":melee"),
-        (try_end),
         (agent_get_attack_action, ":attack_state", ":bot"),
         (try_begin),
             (gt, ":action", 0),
-            (neq, ":before", ":desired"),
+            (assign, ":desired", ":rifle"),
             (try_begin),
+                (eq, ":action", 1),
+                (assign, ":desired", ":melee"),
+            (try_end),
+            (try_begin),
+                (eq, ":before", ":desired"),
+                (val_add, ":observed_count", 1),
+            (else_try),
                 (eq, ":attack_state", 5),
                 (val_or, ":result_flags", result_wait_reload),
             (else_try),
                 (lt, ":now", ":deadline"),
                 (val_or, ":result_flags", result_wait_bolt),
             (else_try),
-                (assign, ":requested", ":desired"),
-                (try_begin),
-                    (eq, ":action", 1),
-                    (neq, ":before", ":rifle"),
-                    # Ready the original rifle before probing the paired ID.
-                    (assign, ":requested", ":rifle"),
-                (try_end),
-                (agent_set_wielded_item, ":bot", ":requested"),
-                (eq, ":requested", ":desired"),
-                (assign, ":attempted", 1),
-                (val_add, ":attempt_count", 1),
+                # Stock equips cannot target a slot or restore its magazine.
+                (val_or, ":result_flags", result_swap_blocked),
             (try_end),
         (try_end),
-        (agent_get_wielded_item, ":after", ":bot", 0),
-        (try_begin),
-            (eq, ":after", ":desired"),
-            (val_add, ":observed_count", 1),
-        (else_try),
-            (eq, ":attempted", 1),
-            (val_or, ":result_flags", result_not_observed),
-        (try_end),
-        (agent_get_ammo, reg8, ":bot", 1),
         (team_get_weapon_usage_order, reg9, ":team", ":division"),
         (assign, reg0, ":player_no"),
         (assign, reg1, ":bot"),
         (assign, reg2, ":division"),
         (assign, reg3, ":action"),
         (assign, reg4, ":before"),
-        (assign, reg5, ":requested"),
-        (assign, reg6, ":after"),
         (assign, reg7, ":deadline"),
         (assign, reg11, ":attack_state"),
-        (server_add_message_to_log, "@SS1914 owner={reg0} bot={reg1} division={reg2} action={reg3} before={reg4} request={reg5} after={reg6} deadline={reg7} attack_state={reg11} ammo_before={reg10} ammo_after={reg8} native_usage={reg9}"),
+        (server_add_message_to_log, "@SS1914 owner={reg0} bot={reg1} division={reg2} action={reg3} before={reg4} deadline={reg7} attack_state={reg11} native_usage={reg9}"),
     (try_end),
 ]
 
@@ -261,25 +239,21 @@ fire_orders_poc_display = [
         (eq, reg1, 0),
         (display_message, "@SS1914 Sunucu: Secimde uygun tufekli bot yok."),
     (else_try),
-        (assign, reg3, ":observed_count"),
-        (try_begin),
-            (eq, ":action", 1),
-            (display_message, "@[SS1914] HEDEF: {reg1} | DENEME: {reg2} | SUNGU MODU: {reg3}"),
-        (else_try),
-            (display_message, "@[SS1914] HEDEF: {reg1} | DENEME: {reg2} | TUFEK MODU: {reg3}"),
-        (try_end),
+        (assign, reg3, ":count_b"),
+        (store_sub, reg4, reg1, reg3),
+        (display_message, "@[SS1914] HEDEF: {reg1} | DENEME: 0 | BASARILI: 0 | BASARISIZ: 0"),
         (assign, ":reload_flag", ":result_flags"),
         (val_and, ":reload_flag", result_wait_reload),
         (assign, ":bolt_flag", ":result_flags"),
         (val_and, ":bolt_flag", result_wait_bolt),
         (assign, ":failed_flag", ":result_flags"),
-        (val_and, ":failed_flag", result_not_observed),
+        (val_and, ":failed_flag", result_swap_blocked),
         (str_clear, s0),
         (str_clear, s1),
         (str_clear, s2),
         (try_begin),
             (neq, ":failed_flag", 0),
-            (str_store_string, s0, "@GECIS GOZLENMEDI. "),
+            (str_store_string, s0, "@GUVENLI SLOT/SARJOR GECISI YOK. "),
         (try_end),
         (try_begin),
             (neq, ":reload_flag", 0),
@@ -289,10 +263,7 @@ fire_orders_poc_display = [
             (neq, ":bolt_flag", 0),
             (str_store_string, s2, "@BOLT BEKLEMESI."),
         (try_end),
-        (try_begin),
-            (neq, ":result_flags", 0),
-            (display_message, "@[SS1914] {s0}{s1}{s2}"),
-        (try_end),
+        (display_message, "@[SS1914] ISTENEN MODDA: {reg3} | ATLANDI: {reg4}. {s0}{s1}{s2}"),
     (try_end),
 ]
 
@@ -301,25 +272,18 @@ fire_orders_poc_request += [
     (assign, ":result_action", ":action"),
     (val_or, ":result_action", ":result_flags"),
     (assign, ":count_a", ":target_count"),
-    (assign, ":count_b", ":attempt_count"),
+    (assign, ":count_b", ":observed_count"),
     (try_begin),
         (eq, ":action", 0),
         (assign, ":count_a", ":rifle_count"),
         (assign, ":count_b", ":melee_count"),
-    (try_end),
-    (assign, ":wire_count", ":count_b"),
-    (try_begin),
-        (gt, ":action", 0),
-        # WFaS uses signed int operands; keep two counts in 16-bit fields.
-        (val_lshift, ":wire_count", 16),
-        (val_or, ":wire_count", ":observed_count"),
     (try_end),
     (try_begin),
         (eq, ":player_no", ":host"),
 ] + fire_orders_poc_display + [
     (else_try),
         (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
-         ":result_action", ":selected_count", ":count_a", ":wire_count"),
+         ":result_action", ":selected_count", ":count_a", ":count_b"),
     (try_end),
 ]
 
@@ -330,16 +294,9 @@ fire_orders_poc_result = [
     (store_script_param, ":count_b", 4),
     (is_between, ":action", 0, 32),
     (assign, ":result_flags", ":action"),
-    (val_and, ":result_flags", result_wait_reload | result_wait_bolt | result_not_observed),
+    (val_and, ":result_flags", result_wait_reload | result_wait_bolt | result_swap_blocked),
     (val_and, ":action", 3),
     (is_between, ":action", 0, 3),
-    (assign, ":observed_count", 0),
-    (try_begin),
-        (gt, ":action", 0),
-        (assign, ":observed_count", ":count_b"),
-        (val_and, ":observed_count", 65535),
-        (val_rshift, ":count_b", 16),
-    (try_end),
 ] + fire_orders_poc_display
 
 # Keep the engine callback below the WFaS per-script local-variable limit.

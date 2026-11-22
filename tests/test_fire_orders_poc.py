@@ -13,7 +13,7 @@ from module_fire_orders_poc import (
     fire_orders_poc_enabled, fire_orders_poc_event, fire_orders_poc_request,
     fire_orders_poc_interval_ms, fire_orders_poc_triggers, fire_orders_poc_result_event,
     fire_orders_poc_unsupported_triggers, result_wait_reload, result_wait_bolt,
-    result_not_observed, fire_orders_poc_dispatch, fire_orders_poc_scripts,
+    result_swap_blocked, fire_orders_poc_dispatch, fire_orders_poc_scripts,
 )
 from module_mission_templates import mission_templates
 from module_scripts import scripts
@@ -40,14 +40,14 @@ class FireOrdersProbeTests(unittest.TestCase):
             self.assertEqual(dispatch[3:end], fire_orders_poc_dispatch)
             self.assertEqual(dispatch[end], else_try)
 
-    def test_mutation_follows_server_and_bot_guards(self):
+    def test_read_only_assessment_follows_server_and_bot_guards(self):
         ops = fire_orders_poc_request
         writes = [op for op in ops if isinstance(op, tuple) and op[0] in (
             agent_set_wielded_item, agent_equip_item, agent_unequip_item,
             agent_set_ammo, team_give_order, agent_set_division, agent_set_group,
             agent_set_slot, agent_set_animation,
         )]
-        self.assertEqual(writes, [(agent_set_wielded_item, ":bot", ":requested")])
+        self.assertEqual(writes, [])
         guards = [
             multiplayer_is_server,
             (player_is_active, ":player_no"),
@@ -60,7 +60,6 @@ class FireOrdersProbeTests(unittest.TestCase):
             (neq, ":selected", 0),
             (eq, ":matches", 1),
             (lt, ":now", ":deadline"),
-            writes[0],
         ]
         positions = [ops.index(op) for op in guards]
         self.assertEqual(positions, sorted(positions))
@@ -355,18 +354,16 @@ class StatusMessageTests(unittest.TestCase):
             (2, fire_orders_poc_result_event, 0, 0, 0, 0),
         ])
 
-    def test_attempt_count_excludes_readying_and_already_selected_mode(self):
+    def test_already_in_requested_mode_is_observed_without_a_swap(self):
         model = RequestModel()
-        model.weapon = -1
-        for action in (1, 1, 1, 0, 2):
-            model.request(action=action)
-            model.now += fire_orders_poc_interval_ms
-        self.assertEqual([reply[2:] for reply in model.replies], [
-            (1, 1, 1, 0), (1, 1, 1, 65537), (1, 1, 1, 1),
-            (0, 1, 0, 1), (2, 1, 1, 65537),
-        ])
+        model.request(action=2)
+        self.assertEqual(model.replies[-1][2:], (2, 1, 1, 1))
+        model.now += fire_orders_poc_interval_ms
+        model.request(action=1)
+        self.assertEqual(model.replies[-1][2:], (1 | result_swap_blocked, 1, 1, 0))
+        self.assertEqual(model.wield_calls, [])
 
-    def test_reports_reload_bolt_and_failed_setter_separately(self):
+    def test_reports_reload_bolt_and_unavailable_swap_separately(self):
         model = RequestModel()
         model.attack_state = 5
         model.request(action=1)
@@ -378,15 +375,14 @@ class StatusMessageTests(unittest.TestCase):
         self.assertEqual(model.replies[-1][2:], (1 | result_wait_bolt, 1, 1, 0))
         self.assertEqual(model.wield_calls, [])
         model.now += fire_orders_poc_interval_ms
-        model.wield_changes_mode = False
         model.request(action=1)
-        self.assertEqual(model.replies[-1][2:], (1 | result_not_observed, 1, 1, 65536))
+        self.assertEqual(model.replies[-1][2:], (1 | result_swap_blocked, 1, 1, 0))
         model.server = False
         for reply in model.replies:
             model.deliver(0, reply[2:])
         self.assertIn("RELOAD DEVAM EDIYOR", model.messages[1])
         self.assertIn("BOLT BEKLEMESI", model.messages[3])
-        self.assertIn("GECIS GOZLENMEDI", model.messages[5])
+        self.assertIn("GUVENLI SLOT/SARJOR GECISI YOK", model.messages[5])
 
     def test_reply_display_requires_server_sender_and_client_context(self):
         model = RequestModel()
@@ -397,14 +393,14 @@ class StatusMessageTests(unittest.TestCase):
         self.assertEqual(model.messages, [])
         for payload in ((0, 0, 0, 0), (0, 1, 1, 0), (1, 1, 1, 0), (2, 1, 1, 1)):
             model.deliver(0, payload)
-        self.assertEqual(len(model.messages), 4)
+        self.assertEqual(len(model.messages), 6)
         self.assertIn("Secili canli bot yok", model.messages[0])
         self.assertIn("F8 Kabul", model.messages[1])
-        self.assertIn("SUNGU MODU", model.messages[2])
-        self.assertIn("TUFEK MODU", model.messages[3])
+        self.assertIn("DENEME: 0", model.messages[2])
+        self.assertIn("ISTENEN MODDA", model.messages[5])
         for msg in model.messages:
             self.assertEqual(msg.decode("ascii"), msg)
-            self.assertNotIn("BASARILI", msg)
+            self.assertNotIn("BASARILI: 1", msg)
 
 
 if __name__ == "__main__":

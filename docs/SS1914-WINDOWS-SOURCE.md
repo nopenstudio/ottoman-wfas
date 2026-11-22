@@ -64,10 +64,10 @@ istemciler ve dedicated sunucu için kullan.
 - Başka MP modunda algılama satırından sonra TDM gerekliliği görünür.
   TDM'de ölü oyuncu ve boş seçim uyarılarını kontrol et. Canlı TDM
   oyuncusuyla bot division'ı seç, tuşlar arasında yarım saniye bırak.
-  F9/F10 hedefi, setter ile denenen geçişi ve isteğin hemen ardından elde
-  gözlenen modu ayrı sayar. Reload devam ediyorsa veya bolt deadline
-  dolmadıysa setter çağrılmaz. `GECIS GOZLENMEDI` anlık item ID sonucudur.
-  Bir saniye sonra F8'e basarak AI modunun kalıp kalmadığını karşılaştır.
+  F9/F10 hedef sayısını, yapılan denemeleri, sonuçları ve istenen modda
+  gözlenen botları ayrı gösterir. Güvenli geçiş yolu bulunmadığı için bu
+  sürümde deneme sayısı sıfırdır. 'ATLANDI' hedeflenen moda zaten sahip
+  olmayan botları sayar. F8 mevcut durumu okur.
 - Bot sahipliğini iki oyuncuyla kontrol et. Aynı division'da diğer
   oyuncunun botu değişmemeli. Listen host yalnız kendi yanıtını yerel
   görmeli. Uzak oyuncu yanıtını sunucudan özel olarak almalı.
@@ -81,23 +81,32 @@ istemciler ve dedicated sunucu için kullan.
 
 ## Süngü yolu ve motor sınırı
 
-Önceki oyun testinde paired melee ID isteği hiçbir botu değiştirmedi.
-`agent_set_wielded_item` bir item ID'si alır. Yayımlanan WFaS 1.143
-operation tablosunda bağlı item modunu doğrudan seçen veya okuyabilen
-ayrı bir API bulunmadı. `agent_get_wielded_item` elde bildirilen item ID'sini
-okur. Bu ID, geçici AI seçimini veya motorun iç modunu tek başına kanıtlamaz.
-`agent_set_attack_action` saldırı hareketi seçer. Botun eşya modunu ayarlamaz.
+Durum **ENGINE-BLOCKED**. Oyun testinde paired ID denemesi botu değiştirmedi.
+Bu setter F9/F10 yolundan kaldırıldı.
 
-`mordr_use_melee_weapons` ve `mordr_use_ranged_weapons` native takım
-emirleridir. `team_give_order` takım ve division alır, sahiplik almaz.
-Aynı division'ı paylaşan başka oyuncunun botlarına uygulanabilecek bir
-emir gönderilmez. F9/F10 sahiplik kapsamındaki birer setter denemesi
-olarak kalır. Testte anlık ve bir saniye sonraki F8 çıktısını, ayrıca
-sunucu logundaki before/request/after, attack_state ve native_usage
-alanlarını birlikte kaydet.
+- [Native emir sabiti](../header_mission_templates.py#L38) ve
+  [team_give_order](../header_operations.py#L834) takım/division düzeyindedir.
+  API oyuncu sahipliği parametresi almaz. itp_next_item_as_melee bağlantısının
+  native melee emri altında gerçekten seçildiğine ilişkin WFaS 1.143 oyun
+  kanıtı bulunamadı. Oyuncu izolasyonu doğrulanamadığından emir kullanılmaz.
+- [agent_get_item_slot](../header_operations.py#L852) fiziksel slottaki ID'yi
+  okuyabilir. [agent_unequip_item](../header_operations.py#L813) item ID'si
+  alır. [agent_equip_item](../header_operations.py#L821) boş slot gerektirir
+  ve WFaS başlığında hedef slot parametresi yoktur. Botun tek tüfek taşıması
+  birden fazla slot boş olabileceği anlamına gelir. Çıkarıp eklemek aynı
+  slotu veya aynı fiziksel item örneğini garanti etmez.
+- [agent_get_ammo](../header_operations.py#L753) eldeki silah için mühimmat
+  döndürür. [agent_set_ammo](../header_operations.py#L816) item ID'si alır.
+  Belgelenen API yüklü şarjör, yedek mühimmat ve native reload durumunun
+  fiziksel slot bazında bağımsız olarak geri yüklenmesini sağlamaz.
+  Swap veya rollback sırasında şarjör durumunu koruma garantisi yoktur.
+- F9/F10 envanter, mühimmat, native emir veya bolt slotlarına yazmaz.
+  Hız sınırı ve bot sahipliği kontrolleri yerinde durur. F8 ile mevcut
+  eldeki ID gözlenebilir. AI'nın yeni moda geçip orada kalması bu sürümde
+  sınanmış sayılmaz.
 
 P0 kabulü için Çanakkale tüfeğiyle yedi atıştan sonra reload'un bittiğini
 ve sekizinci atışın çıktığını aynı kayıtta göster. Stok musket/karabina ile
 normal reload'u, iki çift namlulu tabanca ile reload ve sonraki atışı da
 ayrı dene. F9/F10'u reload sırasında ve bolt deadline içindeyken dene.
-Bekleme nedeni görünmeli ve o istek için setter deneme sayısı artmamalı.
+Uygun hedef istenen modda değilse bekleme nedeni görünmeli. Deneme sayısı sıfır kalmalı.
