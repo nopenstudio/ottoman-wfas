@@ -98,18 +98,47 @@ fire_orders_poc_triggers = key_triggers([
     ]),
 ]
 
+native_red_reasons = (
+    ("server", "Sunucu yetkisi yok."),
+    ("dedicated", "Dedicated sunucu gerekli."),
+    ("tdm", "Team Deathmatch gerekli."),
+    ("captain", "Captain modu kapali olmali."),
+    ("action", "Gecersiz emir."),
+    ("password", "Sunucu sifreli olmali."),
+    ("players", "Tam bir bagli insan oyuncu gerekli."),
+    ("sender", "Komutan aktif degil."),
+    ("mask", "Tam bir division sec."),
+    ("empty", "Division bos."),
+    ("player_agent", "Division icinde oyuncu karakteri var."),
+    ("nonhuman", "Division icinde insan tipi olmayan agent var."),
+    ("owner", "Bot komutana ait degil."),
+    ("reload", "Bot reload yapiyor."),
+    ("bolt", "Bot bolt suresini bekliyor."),
+    ("troop", "Bot Canakkale birlik tipinde degil."),
+    ("rifle", "Bot tek Canakkale tufegi tasimiyor."),
+    ("extra_weapon", "Bot ek silah tasiyor."),
+)
+native_red_codes = dict((name, index) for index, (name, _) in enumerate(native_red_reasons, 1))
+
+
+def native_check(reason, *conditions):
+    # A failed conditional script leaves its last rejection code in reg0.
+    return [(assign, reg0, native_red_codes[reason])] + list(conditions)
+
+
 # A conditional server script. Do not reuse a division order in public MP.
 native_bayonet_order = [
+    (assign, reg13, -1),
     (store_script_param, ":player_no", 1),
     (store_script_param, ":team", 2),
     (store_script_param, ":mask", 3),
     (store_script_param, ":action", 4),
     (store_script_param, ":now", 5),
-    (multiplayer_is_server),
-    (multiplayer_is_dedicated_server),
-    (eq, "$g_multiplayer_game_type", multiplayer_game_type_team_deathmatch),
-    (eq, "$g_multiplayer_is_game_type_captain", 0),
-    (is_between, ":action", 1, 3),
+] + native_check("server", (multiplayer_is_server)) + [
+] + native_check("dedicated", (multiplayer_is_dedicated_server)) + [
+] + native_check("tdm", (eq, "$g_multiplayer_game_type", multiplayer_game_type_team_deathmatch)) + [
+] + native_check("captain", (eq, "$g_multiplayer_is_game_type_captain", 0)) + [
+] + native_check("action", (is_between, ":action", 1, 3)) + [
     (str_store_server_password, s0),
     (assign, ":private", 0),
     (try_begin),
@@ -117,15 +146,15 @@ native_bayonet_order = [
         (assign, ":private", 1),
     (try_end),
     (str_clear, s0),
-    (eq, ":private", 1),
+] + native_check("password", (eq, ":private", 1)) + [
     (get_max_players, ":limit"),
     (assign, ":humans", 0),
     (try_for_range, ":player", 1, ":limit"),
         (player_is_active, ":player"),
         (val_add, ":humans", 1),
     (try_end),
-    (eq, ":humans", 1),
-    (player_is_active, ":player_no"),
+] + native_check("players", (eq, ":humans", 1)) + [
+] + native_check("sender", (player_is_active, ":player_no")) + [
     # Accept exactly one real division, never a combined selection.
     (assign, ":division", -1),
     (try_for_range, ":candidate", 0, grc_everyone),
@@ -134,9 +163,11 @@ native_bayonet_order = [
         (eq, ":mask", ":bit"),
         (assign, ":division", ":candidate"),
     (try_end),
-    (ge, ":division", 0),
+] + native_check("mask", (ge, ":division", 0)) + [
     (assign, ":members", 0),
     (assign, ":eligible", 0),
+    (assign, ":first_reason", 0),
+    (assign, ":first_agent", -1),
     (try_for_agents, ":agent"),
         (agent_is_active, ":agent"),
         (agent_is_alive, ":agent"),
@@ -145,17 +176,20 @@ native_bayonet_order = [
         (agent_get_division, ":agent_division", ":agent"),
         (eq, ":agent_division", ":division"),
         (val_add, ":members", 1),
-        (agent_is_non_player, ":agent"),
-        (agent_is_human, ":agent"),
+        (try_begin),
+] + native_check("player_agent", (agent_is_non_player, ":agent")) + [
+] + native_check("nonhuman", (agent_is_human, ":agent")) + [
         (agent_get_group, ":owner", ":agent"),
-        (eq, ":owner", ":player_no"),
+] + native_check("owner", (eq, ":owner", ":player_no")) + [
         (agent_get_attack_action, ":attack", ":agent"),
-        (neq, ":attack", 5),
+] + native_check("reload", (neq, ":attack", 5)) + [
         (agent_get_slot, ":deadline", ":agent", slot_agent_canakkale_bolt_until),
-        (ge, ":now", ":deadline"),
+] + native_check("bolt", (ge, ":now", ":deadline")) + [
         (agent_get_troop_id, ":troop", ":agent"),
+] + native_check("troop",
         (this_or_next|eq, ":troop", "trp_khergit_dismounted_lancer_multiplayer_ai"),
         (eq, ":troop", "trp_nord_scout_multiplayer_ai"),
+) + [
         (assign, ":rifle_slots", 0),
         (assign, ":weapon_slots", 0),
         (try_for_range, ":slot", 0, 4),
@@ -169,11 +203,18 @@ native_bayonet_order = [
             (eq, ":item", "itm_canakkale_british_rifle_melee"),
             (val_add, ":rifle_slots", 1),
         (try_end),
-        (eq, ":rifle_slots", 1),
-        (eq, ":weapon_slots", 1),
-        (val_add, ":eligible", 1),
+] + native_check("rifle", (eq, ":rifle_slots", 1)) + [
+] + native_check("extra_weapon", (eq, ":weapon_slots", 1)) + [
+            (val_add, ":eligible", 1),
+        (else_try),
+            (eq, ":first_reason", 0),
+            (assign, ":first_reason", reg0),
+            (assign, ":first_agent", ":agent"),
+        (try_end),
     (try_end),
-    (gt, ":members", 0),
+] + native_check("empty", (gt, ":members", 0)) + [
+    (assign, reg0, ":first_reason"),
+    (assign, reg13, ":first_agent"),
     (eq, ":members", ":eligible"),
     (assign, ":order", mordr_use_melee_weapons),
     (try_begin),
@@ -196,7 +237,13 @@ native_bayonet_request = [
              ":player_no", ":team", ":mask", ":action", ":now"),
             (assign, ":result_flags", result_native_sent),
         (else_try),
+            (assign, ":native_reason", reg0),
             (assign, ":result_flags", result_native_refused),
+            (assign, reg1, ":player_no"),
+            (assign, reg2, ":mask"),
+            (assign, reg3, ":action"),
+            (assign, reg4, ":now"),
+            (server_add_message_to_log, "@SS1914 RED reason={reg0} agent={reg13} player={reg1} mask={reg2} action={reg3} ms={reg4}"),
         (try_end),
     (try_end),
 ]
@@ -245,7 +292,7 @@ fire_orders_poc_request = [
     (assign, ":target_count", 0),
     (assign, ":observed_count", 0),
     (assign, ":result_flags", 0),
-] + (native_bayonet_request if native_bayonet_experiment else []) + [
+] + ([(assign, ":native_reason", 0)] + native_bayonet_request if native_bayonet_experiment else []) + [
     (assign, ":rifle_count", 0),
     (assign, ":melee_count", 0),
     (try_for_agents, ":bot"),
@@ -345,7 +392,13 @@ native_bayonet_display = [
         (assign, ":native_flag", ":result_flags"),
         (val_and, ":native_flag", result_native_refused),
         (neq, ":native_flag", 0),
-        (display_message, "@[SS1914] RED: Ozel TDM, tek oyuncu, izole ve hazir bot division gerekli."),
+        (try_begin),
+] + [
+    op for index, (_, message) in enumerate(native_red_reasons, 1)
+    for op in [(eq, ":count_b", index), (display_message, "@[SS1914] RED: " + message), (else_try)]
+] + [
+            (display_message, "@[SS1914] RED: Ayrinti sunucu logunda."),
+        (try_end),
 ]
 
 fire_orders_poc_display = [
@@ -353,6 +406,8 @@ fire_orders_poc_display = [
     (assign, reg1, ":count_a"),
     (assign, reg2, ":count_b"),
     (try_begin),
+] + ([(eq, ":action", -1)] + native_bayonet_display + [(else_try)]
+     if native_bayonet_experiment else []) + [
         (eq, reg0, 0),
         (display_message, "@SS1914 Sunucu: Secili canli bot yok."),
     (else_try),
@@ -360,7 +415,6 @@ fire_orders_poc_display = [
         (store_sub, reg3, reg0, reg1),
         (val_sub, reg3, reg2),
         (display_message, "@SS1914 F8 Kabul: Bot {reg0}, tufek {reg1}, sungu {reg2}, diger {reg3}."),
-] + (native_bayonet_display if native_bayonet_experiment else []) + [
     (else_try),
         (eq, reg1, 0),
         (display_message, "@SS1914 Sunucu: Secimde uygun tufekli bot yok."),
@@ -404,6 +458,12 @@ fire_orders_poc_request += [
         (assign, ":count_a", ":rifle_count"),
         (assign, ":count_b", ":melee_count"),
     (try_end),
+] + ([
+    (try_begin),
+        (gt, ":native_reason", 0),
+        (assign, ":count_b", ":native_reason"),
+    (try_end),
+] if native_bayonet_experiment else []) + [
     (try_begin),
         (eq, ":player_no", ":host"),
 ] + fire_orders_poc_display + [

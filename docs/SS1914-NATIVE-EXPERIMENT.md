@@ -47,3 +47,45 @@ oturum için deney bayrağı kapalı kaynakla derlenen dosyaları kullan.
 Kaynak motorun reload, bolt, slot ve mühimmatına doğrudan yazmaz.
 Gerçek geçiş, modun kalıcılığı ve motorun mühimmatı koruması oyun
 testine bağlıdır.
+
+## Windows oyun sonucu ve RED teşhisi
+
+59ef87e8 Windows oyun testinde reload tamamlandı. F9 ile süngü geçişi
+gözlenmedi. F10 dönüşü ölçülemedi. O oturuma ait sunucu logu burada
+bulunamadığı için native çağrının çalışıp çalışmadığı belirsizdir.
+Önceki paired-ID setter deneyi ayrıca başarısızdır ve geri eklenmedi.
+
+Bu revizyon oyun davranışına yeni bir geçiş yöntemi eklemez. Mevcut
+izole deneyin kararını etiketler. F9/F10 için logu filtrele:
+
+    Select-String -Path .\SUNUCU_LOGU.txt -Pattern '@SS1914 (NATIVE|RED|SAMPLE)'
+
+- `NATIVE ... order=10` ve ilgili `SAMPLE` satırları varsa native melee
+  çağrısı yapılmıştır. Hemen sonraki örnekte ve bir saniye sonraki
+  F8'de eldeki tüfek ile davranış değişmiyorsa native yöntem bu
+  oturumda başarısızdır. `order=11` yalnız dönüş isteğini gösterir.
+- `RED reason=N agent=ID` varsa native emir çağrılmamıştır. Ekrandaki
+  Türkçe satır ilk reddi açıklar. `agent=-1` bir oturum koşulunu gösterir.
+  Birden çok uygunsuz bot varsa ilk ihlal eden agent kaydedilir.
+- İki satır da yoksa önce deney bayrağını ve dedike sunucuya kurulan
+  derlemeyi kontrol et. F8 ile sunucuya ulaşıldığını doğrula. F9'dan önce
+  canlı ol, seçim yap, en az yarım saniye bekle. Eski logda satırın
+  bulunmaması tek başına bir motor sonucu vermez.
+
+| Kod | RED nedeni |
+| --- | --- |
+| 1–5 | Sırasıyla sunucu yetkisi, dedicated, TDM, Captain, geçersiz emir |
+| 6–10 | Şifre eksik, insan oyuncu sayısı, pasif komutan, tek division seçilmedi, boş division |
+| 11–14 | Division'da oyuncu karakteri, insan tipi olmayan agent, farklı bot sahibi, aktif reload |
+| 15–18 | Bolt beklemesi, uygunsuz birlik türü, tek Çanakkale tüfeği yok, ek silah |
+
+## Tek slotu dönüştürme — ENGINE-BLOCKED
+
+Tek botta bile mevcut WFaS 1.143 başlığında `agent_equip_item` hedef
+fiziksel slot kabul etmez. `agent_get_ammo` ve `agent_set_ammo` yüklü
+şarjör, yedek ve native reload durumunu fiziksel slot bazında ayrı ayrı
+yedekleyip geri yükleme sözleşmesi sağlamaz. Çıkarıp yeniden takma ile
+yedinci mermi kapasitesini korumak tek başına kalan merminin korunduğunu
+kanıtlamaz. Silahı geri takma da özgün item örneğini geri getirmez.
+Bu nedenle tek bot için bile envanter dönüşümü eklenmedi. Çalışan P0
+reload, bolt, mühimmat ve animasyon kaynaklarına dokunulmadı.
