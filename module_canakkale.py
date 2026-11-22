@@ -6,7 +6,6 @@ uses one STATIC end-frame hold, released at the original deadline. These stock
 animation controls still require WFaS verification for actual fire/aim denial;
 the post-projectile attack trigger cannot retract an already emitted missile.
 """
-from module_canakkale_assets import custom_magazine_reload
 from header_common import *
 from header_operations import *
 from header_triggers import *
@@ -142,39 +141,3 @@ canakkale_mission_triggers = [
     # Poll transitions/deadlines each frame; never replay an action per frame.
     (0, 0, 0, [], [(call_script, "script_canakkale_bolt_tick")]),
 ]
-
-canakkale_reload_triggers = []
-if custom_magazine_reload:
-    from header_items import itcf_shoot_mask, itcf_shoot_musket
-    from module_items import items
-
-    # Shoot capability separates muskets/carbines from pistols that share
-    # reload_musket, crossbows, bows and linked melee records.
-    rifles = ["itm_" + item[0] for item in items
-              if item[4] & itcf_shoot_mask == itcf_shoot_musket]
-    rifle_check = [(this_or_next|eq, ":weapon", rifle) for rifle in rifles[:-1]]
-    rifle_check.append((eq, ":weapon", rifles[-1]))
-
-    # Latch the native reload transition before overriding its upper-body clip.
-    canakkale_reload_triggers.append((ti_on_agent_spawn, 0, 0, [], [
-        (store_trigger_param_1, ":agent"),
-        (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 0),
-    ]))
-    canakkale_reload_triggers.append((0, 0, 0, [], [
-        (try_for_agents, ":agent"),
-            (agent_is_alive, ":agent"),
-            (agent_is_human, ":agent"),
-            (agent_get_attack_action, ":action", ":agent"),
-            (try_begin),
-                (neq, ":action", 5),
-                (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 0),
-            (else_try),
-                (agent_slot_eq, ":agent", slot_agent_canakkale_reload_seen, 0),
-                (agent_get_wielded_item, ":weapon", ":agent", 0),
-            ] + rifle_check + [
-                (agent_slot_eq, ":agent", slot_agent_canakkale_bolt_until, 0),
-                (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 1),
-                (agent_set_animation, ":agent", "anim_rifle_magazine_reload_7", 1),
-            (try_end),
-        (try_end),
-    ]))

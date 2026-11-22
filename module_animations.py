@@ -2124,5 +2124,16 @@ animations.append(["canakkale_bolt_hold", 0, 90|amf_keep,
  [2.0, "rifle_bolt_cycle_2s", 60, 60, arf_stick_item_to_left_hand]])
 
 if custom_magazine_reload:
-    animations.append(["rifle_magazine_reload_7", 0, amf_priority_reload|amf_play,
-        [3.0, "rifle_magazine_reload_7", 0, 90, arf_blend_in_3]])
+    # Preserve the native action IDs, flags and timing. The partial actions
+    # start at the corresponding point in the same magazine clip.
+    magazine_frames = {
+        "reload_musket": (0, 90),
+        "reload_musket_full": (0, 90),
+        "reload_musket_two_third": (29, 90),
+        "reload_musket_one_third": (71, 90),
+    }
+    for action in animations:
+        if action[0] in magazine_frames:
+            first, last = magazine_frames[action[0]]
+            sequence = action[3]
+            sequence[1:4] = ["rifle_magazine_reload_7", first, last]

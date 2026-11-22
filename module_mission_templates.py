@@ -17347,12 +17347,11 @@ mission_templates = [
 ]
 
 # Install only in normal multiplayer; Captain/single-player templates are untouched.
-from module_canakkale import canakkale_mission_triggers, canakkale_reload_triggers
+from module_canakkale import canakkale_mission_triggers
 for _mission in mission_templates:
   if _mission[0] in ("multiplayer_dm", "multiplayer_tdm", "multiplayer_cf",
                      "multiplayer_sg", "multiplayer_bt", "multiplayer_duel"):
     _mission[5].extend(canakkale_mission_triggers)
-  _mission[5].extend(canakkale_reload_triggers)
 
 from module_fire_orders_poc import (fire_orders_poc_enabled, fire_orders_poc_triggers,
                                     fire_orders_poc_unsupported_triggers)

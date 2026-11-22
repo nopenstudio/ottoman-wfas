@@ -1709,7 +1709,7 @@ items = [
  45000 , weight(5.25)|difficulty(9)|spd_rtng(32) | shoot_speed(125) | thrust_damage(80 ,pierce)|max_ammo(2)|accuracy(80),imodbits_crossbow ], 
 ["zakaz_2stwol_koleso_melee", "{!}do not translate", [("karabin_2stwol",0)], itp_type_polearm| itp_two_handed|itp_primary|itp_wooden_parry, itc_musket_melee|itcf_carry_spear,
  0 , weight(5.25)|difficulty(8)|spd_rtng(85) | weapon_length(80)|swing_damage(10 , blunt) | thrust_damage(5 , blunt),imodbits_crossbow ],
-["zakaz_2stwol_udar1", "Double-barreled Miquelet Pistol", [("pistol_2stwol",0),("pistol_2stwol_I", ixmesh_inventory)], itp_type_crossbow | itp_primary|itp_can_penetrate_shield|itp_next_item_as_melee ,itcf_reload_musket|itcf_shoot_pistol|itcf_carry_pistol_front_left,
+["zakaz_2stwol_udar1", "Double-barreled Miquelet Pistol", [("pistol_2stwol",0),("pistol_2stwol_I", ixmesh_inventory)], itp_type_crossbow | itp_primary|itp_can_penetrate_shield|itp_next_item_as_melee ,(itcf_reload_pistol if custom_magazine_reload else itcf_reload_musket)|itcf_shoot_pistol|itcf_carry_pistol_front_left,
  55000 , weight(3.25)|difficulty(8)|spd_rtng(44) | shoot_speed(125) | thrust_damage(80 ,pierce)|max_ammo(2)|accuracy(82),imodbits_crossbow ], 
 ["zakaz_2stwol_udar1_melee", "{!}do not translate", [("pistol_2stwol",0)], itp_type_one_handed_wpn|itp_primary|itp_wooden_parry|itp_offset_musket|itp_has_bayonet|itp_no_blur, itc_scimitar|itcf_carry_pistol_front_left,
  0 , weight(3.25)|difficulty(8)|spd_rtng(95) | weapon_length(40)|swing_damage(7 , blunt) | thrust_damage(3 , blunt),imodbits_crossbow ],
@@ -1932,7 +1932,7 @@ items = [
  2000 , weight(5.25)|difficulty(9)|spd_rtng(31) | shoot_speed(130) | thrust_damage(57 ,pierce)|max_ammo(2)|accuracy(75),imodbits_crossbow ],
 ["m_dwustwol_karabin_melee", "Carbine", [("evr_musket_udarniy_a",0)], itp_type_polearm| itp_two_handed|itp_primary|itp_wooden_parry|itp_cant_use_on_horseback|itp_offset_musket|itp_has_bayonet|itp_no_blur, itc_musket_melee|itcf_carry_crossbow_back,
  0 , weight(5.25)|difficulty(9)|spd_rtng(75) | weapon_length(100)|swing_damage(15 , blunt) | thrust_damage(7 , blunt),imodbits_crossbow ],
-["m_dwustwol_pistol", "Double-barreled Pistol", [("pistol_2stwol",0),("pistol_2stwol_I", ixmesh_inventory)], itp_type_crossbow | itp_primary|itp_can_penetrate_shield|itp_next_item_as_melee ,itcf_reload_musket|itcf_shoot_pistol|itcf_carry_pistol_front_left,
+["m_dwustwol_pistol", "Double-barreled Pistol", [("pistol_2stwol",0),("pistol_2stwol_I", ixmesh_inventory)], itp_type_crossbow | itp_primary|itp_can_penetrate_shield|itp_next_item_as_melee ,(itcf_reload_pistol if custom_magazine_reload else itcf_reload_musket)|itcf_shoot_pistol|itcf_carry_pistol_front_left,
  1500 , weight(1.25)|difficulty(8)|spd_rtng(49) | shoot_speed(96) | thrust_damage(44 ,pierce)|max_ammo(2)|accuracy(59),imodbits_crossbow ],
 ["m_dwustwol_pistol_melee", "not to be translated", [("pistol_2stwol",0)], itp_type_one_handed_wpn|itp_primary|itp_wooden_parry|itp_offset_musket|itp_has_bayonet|itp_no_blur, itc_scimitar|itcf_carry_pistol_front_left,
  0 , weight(1.25)|difficulty(8)|spd_rtng(95) | weapon_length(35)|swing_damage(8 , blunt) | thrust_damage(0 , blunt),imodbits_crossbow ],
@@ -2330,13 +2330,13 @@ items = [
 
 # CANAKKALE-MVP-001: only these two rifles have a seven-round magazine/bolt trigger.
 ["canakkale_turk_rifle", "Turkish Infantry Rifle", [("musket_turk_koleso",0),("musket_turk_koleso_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield|itp_next_item_as_melee ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
- 520 , weight(9.0)|difficulty(9)|spd_rtng(100 if custom_magazine_reload else 36) | shoot_speed(180) | thrust_damage(58 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ 520 , weight(9.0)|difficulty(9)|spd_rtng(36) | shoot_speed(180) | thrust_damage(58 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
  [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
    (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
 ["canakkale_turk_rifle_melee", "Turkish Infantry Rifle", [("musket_turk_koleso",0)], itp_type_polearm|itp_two_handed|itp_primary|itp_wooden_parry|itp_cant_use_on_horseback|itp_no_blur, itc_parry_polearm|itcf_thrust_polearm|itcf_carry_spear,
  0, weight(9.0)|difficulty(9)|spd_rtng(85)|weapon_length(110)|swing_damage(0,pierce)|thrust_damage(24,pierce),imodbits_crossbow ],
 ["canakkale_british_rifle", "British Infantry Rifle", [("mushket_a",0),("mushket_a_I", ixmesh_inventory)], itp_type_crossbow |itp_primary|itp_two_handed|itp_cant_use_on_horseback|itp_cant_reload_on_horseback|itp_can_penetrate_shield|itp_next_item_as_melee ,itc_parry_polearm|itcf_shoot_musket|itcf_carry_spear,
- 500 , weight(9.0)|difficulty(9)|spd_rtng(100 if custom_magazine_reload else 37) | shoot_speed(180) | thrust_damage(57 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
+ 500 , weight(9.0)|difficulty(9)|spd_rtng(37) | shoot_speed(180) | thrust_damage(57 ,pierce)|max_ammo(7)|accuracy(83),imodbits_crossbow ,
  [(ti_on_weapon_attack, [(store_trigger_param_1, ":shooter"),
    (call_script, "script_canakkale_rifle_fired", ":shooter")])]],
 ["canakkale_british_rifle_melee", "British Infantry Rifle", [("mushket_a",0)], itp_type_polearm|itp_two_handed|itp_primary|itp_wooden_parry|itp_cant_use_on_horseback|itp_no_blur, itc_parry_polearm|itcf_thrust_polearm|itcf_carry_spear,
@@ -2352,3 +2352,9 @@ items = [
 
 ["items_end", "End of list", [("shield_round_a",0)], 0, 0, 1, 0, 0],
 ]
+if custom_magazine_reload:
+    # Explicit native reload routing for long guns. Sidearms use their own
+    # reload capability, even when their underlying item type is crossbow.
+    for item in items:
+        if item[4] & itcf_shoot_mask == itcf_shoot_musket:
+            item[4] = (item[4] & ~itcf_reload_mask) | itcf_reload_musket

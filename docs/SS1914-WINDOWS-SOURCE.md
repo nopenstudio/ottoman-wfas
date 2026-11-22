@@ -17,15 +17,21 @@ kurulu BRF ve module.ini depoda bulunmadığından yerelde kontrol edilmelidir.
   Bolt kaynağı `rifle_bolt_cycle_2s` 0–60 frame olarak ayrı kalır.
 - BRF ve module.ini yüklemesi yerel WFaS istemcileri ve sunucusunda eş olmalı.
 
-Native `reload_musket` ve kademeli musket action kayıtları korunur.
-Bazı tabancalar da musket reload capability'si kullanır. Global action
-değişimi bu silahları etkileyebileceği için özel klip yalnız
-`itcf_shoot_musket` sınıfındaki eldeki tüfek/karabina native reload
-durumuna girdiğinde görsel olarak istenir. Oyuncu ve AI aynı filtreyi
-kullanır. Mevcut bolt deadline ve şarjör işlemleriyle ilgili kaynak motor
-durumunu veya mühimmatını ayarlamaz. Var olan R3 hız ayarı aynen kalır.
-WFaS'te animasyon önceliği, kademeli reload davranışı, senkronizasyon ve
-görsel klibin native doldurmayı kesintiye uğratıp uğratmadığı test edilmelidir.
+Önceki sürüm, motor reload durumundayken `agent_set_animation` ile başka bir
+action başlatıyordu. Gerçek oyunda reload tamamlanmadı ve tekrarlandı.
+Bu sonuç native action'ın kesilmesiyle uyumlu. Motorun iç durumunu bu
+ortamda ölçemedik.
+
+Yeni sürümde `WFAS_MAGAZINE_BRF=1` iken dört native musket reload action'ı
+doğrudan aynı şarjör kaynağını kullanır. Tam klip 0–90, kademeli devam
+aralıkları 29–90 ve 71–90'dır. Native action ID, süre ve hız ölçekleme
+bayrakları korunur. Bu yüzden klibin oyun içi oynatma süresi sabit 3 saniye
+olarak garanti edilmez. Tüfek ve karabinalar musket reload capability'sine
+yönlendirilir. Musket yolunu paylaşan iki çift namlulu tabanca pistol
+reload capability'sine alınır. Diğer tabancalar, yay, arbalet ve yakın
+dövüş bağlantılarına dokunulmaz. Deneysel 100 hız ayarı kaldırıldı.
+Doldurma, kesinti ve ateşe hazır olma işi motora bırakılır. Oyuncu ve AI
+aynı native action kayıtlarını kullanır. Bolt klibi ve deadline ayrı kalır.
 
 ## Standart build_module.bat
 
@@ -58,7 +64,10 @@ istemciler ve dedicated sunucu için kullan.
 - Başka MP modunda algılama satırından sonra TDM gerekliliği görünür.
   TDM'de ölü oyuncu ve boş seçim uyarılarını kontrol et. Canlı TDM
   oyuncusuyla bot division'ı seç, tuşlar arasında yarım saniye bırak.
-  F8 durum özeti, F9/F10 deneme sayısı verir. Bunlar motor kabulü değildir.
+  F9/F10 hedefi, setter ile denenen geçişi ve isteğin hemen ardından elde
+  gözlenen modu ayrı sayar. Reload devam ediyorsa veya bolt deadline
+  dolmadıysa setter çağrılmaz. `GECIS GOZLENMEDI` anlık item ID sonucudur.
+  Bir saniye sonra F8'e basarak AI modunun kalıp kalmadığını karşılaştır.
 - Bot sahipliğini iki oyuncuyla kontrol et. Aynı division'da diğer
   oyuncunun botu değişmemeli. Listen host yalnız kendi yanıtını yerel
   görmeli. Uzak oyuncu yanıtını sunucudan özel olarak almalı.
@@ -69,3 +78,26 @@ istemciler ve dedicated sunucu için kullan.
   ama sonuç gelmiyorsa canlılık, seçili division, host türü ve varsa
   `@SS1914` sunucu loglarını PR #12'ye ekle. Native motor geçişi gerçek
   oyun testiyle doğrulanmalıdır.
+
+## Süngü yolu ve motor sınırı
+
+Önceki oyun testinde paired melee ID isteği hiçbir botu değiştirmedi.
+`agent_set_wielded_item` bir item ID'si alır. Yayımlanan WFaS 1.143
+operation tablosunda bağlı item modunu doğrudan seçen veya okuyabilen
+ayrı bir API bulunmadı. `agent_get_wielded_item` elde bildirilen item ID'sini
+okur. Bu ID, geçici AI seçimini veya motorun iç modunu tek başına kanıtlamaz.
+`agent_set_attack_action` saldırı hareketi seçer. Botun eşya modunu ayarlamaz.
+
+`mordr_use_melee_weapons` ve `mordr_use_ranged_weapons` native takım
+emirleridir. `team_give_order` takım ve division alır, sahiplik almaz.
+Aynı division'ı paylaşan başka oyuncunun botlarına uygulanabilecek bir
+emir gönderilmez. F9/F10 sahiplik kapsamındaki birer setter denemesi
+olarak kalır. Testte anlık ve bir saniye sonraki F8 çıktısını, ayrıca
+sunucu logundaki before/request/after, attack_state ve native_usage
+alanlarını birlikte kaydet.
+
+P0 kabulü için Çanakkale tüfeğiyle yedi atıştan sonra reload'un bittiğini
+ve sekizinci atışın çıktığını aynı kayıtta göster. Stok musket/karabina ile
+normal reload'u, iki çift namlulu tabanca ile reload ve sonraki atışı da
+ayrı dene. F9/F10'u reload sırasında ve bolt deadline içindeyken dene.
+Bekleme nedeni görünmeli ve o istek için setter deneme sayısı artmamalı.
