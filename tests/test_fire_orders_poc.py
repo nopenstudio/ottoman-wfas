@@ -11,7 +11,7 @@ from header_triggers import key_f8, ti_before_mission_start, ti_server_player_jo
 from module_fire_orders_poc import (
     fire_orders_poc_enabled, fire_orders_poc_event, fire_orders_poc_receive,
     fire_orders_poc_interval_ms, fire_orders_poc_triggers, fire_orders_poc_result_event,
-    fire_orders_poc_trigger, fire_orders_poc_unsupported_trigger,
+    fire_orders_poc_unsupported_triggers,
 )
 from module_mission_templates import mission_templates
 from module_scripts import scripts
@@ -45,7 +45,7 @@ class FireOrdersProbeTests(unittest.TestCase):
         )]
         self.assertEqual(writes, [(agent_set_wielded_item, ":bot", ":requested")])
         guards = [
-            multiplayer_is_dedicated_server,
+            multiplayer_is_server,
             (player_is_active, ":player_no"),
             (eq, ":commander_team", ":team"),
             (try_for_agents, ":bot"),
@@ -70,6 +70,8 @@ class RequestModel(object):
         self.replies = []
         self.messages = []
         self.server = True
+        self.dedicated = True
+        self.local_player = 0
         self.commander = 11
         self.selection = [0]
         self.sent = []
@@ -92,8 +94,9 @@ class RequestModel(object):
         self.execute(parse(fire_orders_poc_receive[start:])[0], values,
                      [sender, fire_orders_poc_result_event] + list(payload))
 
-    def press_f8(self, trigger=fire_orders_poc_trigger):
-        self.server = False
+    def press_f8(self, trigger=fire_orders_poc_triggers[0], host=False):
+        self.server = host
+        self.dedicated = False
         self.execute(parse(trigger[3] + trigger[4])[0], {}, [])
 
     def reset(self, event, player=1):
@@ -132,7 +135,12 @@ class RequestModel(object):
             if code == multiplayer_is_server:
                 result = self.server
             elif code == multiplayer_is_dedicated_server:
-                result = self.server
+                result = self.server and self.dedicated
+            elif code == multiplayer_get_my_player:
+                values[args[0]] = self.local_player
+            elif code == call_script:
+                assert a[0] == "script_game_receive_network_message"
+                self.request(player=a[1], mask=a[3], action=a[4])
             elif code == is_presentation_active:
                 result = False
             elif code == key_clicked:
@@ -281,7 +289,7 @@ class RateLimitTests(unittest.TestCase):
 class StatusMessageTests(unittest.TestCase):
     def test_local_feedback_distinguishes_send_and_unavailable_states(self):
         model = RequestModel()
-        model.press_f8(fire_orders_poc_unsupported_trigger)
+        model.press_f8(fire_orders_poc_unsupported_triggers[0])
         model.commander = -1
         model.press_f8()
         model.commander = 11
@@ -291,13 +299,27 @@ class StatusMessageTests(unittest.TestCase):
         model.selection = [0]
         model.press_f8()
         self.assertEqual(model.sent, [(fire_orders_poc_event, 1, 0)])
-        self.assertIn("Takim Olum Maci", model.messages[0])
-        self.assertIn("canli", model.messages[1])
-        self.assertIn("bot grubu sec", model.messages[2])
-        self.assertIn("gonderildi", model.messages[3])
+        self.assertEqual(model.messages[0], "@[SS1914] F8 ALGILANDI")
+        self.assertIn("Takim Olum Maci", model.messages[1])
+        self.assertIn("canli", model.messages[3])
+        self.assertIn("bot grubu sec", model.messages[5])
+        self.assertIn("gonderildi", model.messages[7])
         for msg in model.messages:
             msg.decode("ascii")
 
+
+    def test_listen_host_uses_server_validation_with_local_result(self):
+        model = RequestModel()
+        model.players[0] = 11
+        model.owner = 0
+        model.request(player=0)  # Dedicated server has no playable host.
+        self.assertEqual(model.scans, 0)
+        model.press_f8(host=True)
+        model.press_f8(host=True)
+        self.assertEqual((model.scans, model.logs), (1, 1))
+        self.assertEqual(model.sent, [])
+        self.assertEqual(model.replies, [])
+        self.assertEqual(sum("F8 Kabul" in msg for msg in model.messages), 1)
 
     def test_reply_is_private_and_limited_to_one_per_admitted_request(self):
         model = RequestModel()

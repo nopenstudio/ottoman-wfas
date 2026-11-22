@@ -143,9 +143,24 @@ canakkale_mission_triggers = [
     (0, 0, 0, [], [(call_script, "script_canakkale_bolt_tick")]),
 ]
 
+canakkale_reload_triggers = []
 if custom_magazine_reload:
+    from header_items import itcf_shoot_mask, itcf_shoot_musket
+    from module_items import items
+
+    # Shoot capability separates muskets/carbines from pistols that share
+    # reload_musket, crossbows, bows and linked melee records.
+    rifles = ["itm_" + item[0] for item in items
+              if item[4] & itcf_shoot_mask == itcf_shoot_musket]
+    rifle_check = [(this_or_next|eq, ":weapon", rifle) for rifle in rifles[:-1]]
+    rifle_check.append((eq, ":weapon", rifles[-1]))
+
     # Latch the native reload transition before overriding its upper-body clip.
-    canakkale_mission_triggers.append((0, 0, 0, [], [
+    canakkale_reload_triggers.append((ti_on_agent_spawn, 0, 0, [], [
+        (store_trigger_param_1, ":agent"),
+        (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 0),
+    ]))
+    canakkale_reload_triggers.append((0, 0, 0, [], [
         (try_for_agents, ":agent"),
             (agent_is_alive, ":agent"),
             (agent_is_human, ":agent"),
@@ -156,8 +171,7 @@ if custom_magazine_reload:
             (else_try),
                 (agent_slot_eq, ":agent", slot_agent_canakkale_reload_seen, 0),
                 (agent_get_wielded_item, ":weapon", ":agent", 0),
-                (this_or_next|eq, ":weapon", "itm_canakkale_turk_rifle"),
-                (eq, ":weapon", "itm_canakkale_british_rifle"),
+            ] + rifle_check + [
                 (agent_slot_eq, ":agent", slot_agent_canakkale_bolt_until, 0),
                 (agent_set_slot, ":agent", slot_agent_canakkale_reload_seen, 1),
                 (agent_set_animation, ":agent", "anim_rifle_magazine_reload_7", 1),

@@ -1,4 +1,4 @@
-"""Opt-in WFaS 1.143 paired-item probe for dedicated Team Deathmatch."""
+"""Opt-in WFaS 1.143 paired-item probe for Team Deathmatch."""
 import os
 
 from header_mission_templates import *
@@ -22,27 +22,22 @@ fire_orders_poc_key_conditions = [
     (neg|multiplayer_is_dedicated_server),
     (neg|is_presentation_active, "prsnt_multiplayer_escape_menu"),
     (neg|is_presentation_active, "prsnt_multiplayer_poll_menu"),
-    (this_or_next|key_clicked, key_f8),
-    (this_or_next|key_clicked, key_f9),
-    (key_clicked, key_f10),
 ]
 
-fire_orders_poc_unsupported_trigger = (
-    0, 0, 0.35, fire_orders_poc_key_conditions,
-    [(display_message, "@SS1914: Test yalniz dedicated Takim Olum Maci icin.")],
-)
-
-fire_orders_poc_trigger = (0, 0, 0.35, fire_orders_poc_key_conditions, [
-    (assign, ":action", -1),
-] + [
-    op for key, action in fire_orders_poc_keys for op in [
-        (try_begin),
-            (key_clicked, key),
-            (assign, ":action", action),
-        (try_end),
+def key_triggers(operations, request=False):
+    return [
+        (0, 0, 0.35, fire_orders_poc_key_conditions + [(key_clicked, key)], [
+            (display_message, "@[SS1914] F%d ALGILANDI" % (8 + action)),
+        ] + ([(assign, ":action", action)] if request else []) + operations)
+        for key, action in fire_orders_poc_keys
     ]
-] + [
-    (ge, ":action", 0),
+
+
+fire_orders_poc_unsupported_triggers = key_triggers([
+    (display_message, "@SS1914: Test yalniz Takim Olum Maci icin."),
+])
+
+fire_orders_poc_triggers = key_triggers([
     (get_player_agent_no, ":commander"),
     (assign, ":alive", 0),
     (try_begin),
@@ -51,9 +46,6 @@ fire_orders_poc_trigger = (0, 0, 0.35, fire_orders_poc_key_conditions, [
         (assign, ":alive", 1),
     (try_end),
     (try_begin),
-        (multiplayer_is_server),
-        (display_message, "@SS1914: Dedicated sunucu gerekli."),
-    (else_try),
         (eq, ":alive", 0),
         (display_message, "@SS1914: Once canli olarak oyuna gir."),
     (else_try),
@@ -70,27 +62,30 @@ fire_orders_poc_trigger = (0, 0, 0.35, fire_orders_poc_key_conditions, [
             (eq, ":mask", 0),
             (display_message, "@SS1914: Once bir bot grubu sec."),
         (else_try),
-            (multiplayer_send_2_int_to_server, fire_orders_poc_event, ":mask", ":action"),
-            (assign, reg0, ":action"),
-            (val_add, reg0, 8),
-            (display_message, "@SS1914 F{reg0}: Istek sunucuya gonderildi."),
+            (try_begin),
+                (multiplayer_is_server),
+                (multiplayer_get_my_player, ":host"),
+                (display_message, "@SS1914: Istek yerel sunucuya iletildi."),
+                (call_script, "script_game_receive_network_message", ":host",
+                 fire_orders_poc_event, ":mask", ":action"),
+            (else_try),
+                (multiplayer_send_2_int_to_server, fire_orders_poc_event, ":mask", ":action"),
+                (display_message, "@SS1914: Istek sunucuya gonderildi."),
+            (try_end),
         (try_end),
     (try_end),
-])
-
-fire_orders_poc_triggers = [
-    fire_orders_poc_trigger,
-    (ti_after_mission_start, 0, 0, [neg|multiplayer_is_server], [
+], request=True) + [
+    (ti_after_mission_start, 0, 0, [neg|multiplayer_is_dedicated_server], [
         (display_message, "@SS1914 TEST AKTIF - F8 Durum / F9 Sungu / F10 Tufek"),
     ]),
-    (ti_before_mission_start, 0, 0, [multiplayer_is_dedicated_server], [
+    (ti_before_mission_start, 0, 0, [multiplayer_is_server], [
         (get_max_players, ":player_limit"),
-        (try_for_range, ":player_no", 1, ":player_limit"),
+        (try_for_range, ":player_no", 0, ":player_limit"),
             (player_is_active, ":player_no"),
             (player_set_slot, ":player_no", slot_player_fire_orders_stamp, 0),
         (try_end),
     ]),
-    (ti_server_player_joined, 0, 0, [multiplayer_is_dedicated_server], [
+    (ti_server_player_joined, 0, 0, [multiplayer_is_server], [
         (store_trigger_param_1, ":player_no"),
         (player_set_slot, ":player_no", slot_player_fire_orders_stamp, 0),
     ]),
@@ -99,12 +94,18 @@ fire_orders_poc_triggers = [
 fire_orders_poc_receive = [
     (eq, ":event_type", fire_orders_poc_event),
     (multiplayer_is_server),
-    (multiplayer_is_dedicated_server),
     (game_in_multiplayer_mode),
     (eq, "$g_multiplayer_game_type", multiplayer_game_type_team_deathmatch),
     (eq, "$g_multiplayer_is_game_type_captain", 0),
     (get_max_players, ":player_limit"),
-    (is_between, ":player_no", 1, ":player_limit"),
+    (is_between, ":player_no", 0, ":player_limit"),
+    (assign, ":host", -1),
+    (try_begin),
+        (neg|multiplayer_is_dedicated_server),
+        (multiplayer_get_my_player, ":host"),
+    (try_end),
+    (this_or_next|gt, ":player_no", 0),
+    (eq, ":player_no", ":host"),
     (player_is_active, ":player_no"),
     (player_get_team_no, ":team", ":player_no"),
     (is_between, ":team", 0, 2),
@@ -220,25 +221,7 @@ fire_orders_poc_receive = [
     (try_end),
 ]
 
-# Only the request owner receives a result, once per admitted request.
-fire_orders_poc_receive += [
-    (try_begin),
-        (eq, ":action", 0),
-        (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
-         ":action", ":selected_count", ":rifle_count", ":melee_count"),
-    (else_try),
-        (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
-         ":action", ":selected_count", ":target_count", ":attempt_count"),
-    (try_end),
-    (else_try),
-    (eq, ":event_type", fire_orders_poc_result_event),
-    (neg|multiplayer_is_server),
-    (eq, ":player_no", 0),
-    (store_script_param, ":action", 3),
-    (is_between, ":action", 0, 3),
-    (store_script_param, ":selected_count", 4),
-    (store_script_param, ":count_a", 5),
-    (store_script_param, ":count_b", 6),
+fire_orders_poc_display = [
     (assign, reg0, ":selected_count"),
     (assign, reg1, ":count_a"),
     (assign, reg2, ":count_b"),
@@ -260,3 +243,30 @@ fire_orders_poc_receive += [
         (display_message, "@SS1914 F10 Kabul: Tufek hedefi {reg1}, donus denemesi {reg2}."),
     (try_end),
 ]
+
+# The listen host displays its own result locally. Remote players get one reply.
+fire_orders_poc_receive += [
+    (assign, ":count_a", ":target_count"),
+    (assign, ":count_b", ":attempt_count"),
+    (try_begin),
+        (eq, ":action", 0),
+        (assign, ":count_a", ":rifle_count"),
+        (assign, ":count_b", ":melee_count"),
+    (try_end),
+    (try_begin),
+        (eq, ":player_no", ":host"),
+] + fire_orders_poc_display + [
+    (else_try),
+        (multiplayer_send_4_int_to_player, ":player_no", fire_orders_poc_result_event,
+         ":action", ":selected_count", ":count_a", ":count_b"),
+    (try_end),
+    (else_try),
+    (eq, ":event_type", fire_orders_poc_result_event),
+    (neg|multiplayer_is_server),
+    (eq, ":player_no", 0),
+    (store_script_param, ":action", 3),
+    (is_between, ":action", 0, 3),
+    (store_script_param, ":selected_count", 4),
+    (store_script_param, ":count_a", 5),
+    (store_script_param, ":count_b", 6),
+] + fire_orders_poc_display

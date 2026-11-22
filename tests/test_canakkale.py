@@ -18,9 +18,9 @@ from module_troops import troops
 from module_animations import animations
 from module_scripts import scripts
 from module_mission_templates import mission_templates
-from module_canakkale import canakkale_scripts, canakkale_mission_triggers
+from module_canakkale import canakkale_scripts, canakkale_mission_triggers, canakkale_reload_triggers
 from module_fire_orders_poc import (fire_orders_poc_enabled, fire_orders_poc_triggers,
-                                    fire_orders_poc_unsupported_trigger)
+                                    fire_orders_poc_unsupported_triggers)
 
 BASE = '27989be0cad49d55055e44af8bbc293f5ece95d1'
 I = dict((x[0], x) for x in items)
@@ -63,7 +63,7 @@ class SourceTests(unittest.TestCase):
 
     def test_reload_hook(self):
         from module_canakkale_assets import custom_magazine_reload
-        hooks=[t for t in canakkale_mission_triggers if 'anim_rifle_magazine_reload_7' in repr(t)]
+        hooks=[t for t in canakkale_reload_triggers if 'anim_rifle_magazine_reload_7' in repr(t)]
         self.assertEqual(len(hooks),int(custom_magazine_reload))
         if hooks:
             ops=hooks[0][4]
@@ -75,6 +75,14 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(ops.count((agent_set_animation, ':agent', 'anim_rifle_magazine_reload_7', 1)),1)
             self.assertFalse(any(isinstance(o,tuple) and o[0] in (agent_set_ammo,agent_refill_ammo) for o in ops))
             self.assertEqual(animations[-1][0],'rifle_magazine_reload_7')
+            expected = {"itm_" + item[0] for item in items
+                        if item[4] & itcf_shoot_mask == itcf_shoot_musket}
+            selected = {op[2] for op in ops if isinstance(op, tuple)
+                        and op[0] in (eq, this_or_next|eq) and op[1] == ":weapon"}
+            self.assertEqual(selected, expected)
+            self.assertIn("itm_norm_musket", selected)
+            self.assertIn("itm_norm_karabin", selected)
+            self.assertNotIn("itm_m_dwustwol_pistol", selected)
 
     def test_two_seven_round_clones(self):
         for new,base in [('canakkale_turk_rifle','t_norm_musket'),
@@ -208,9 +216,10 @@ class SourceTests(unittest.TestCase):
             expected = list(before[5])
             if after[0] in wanted:
                 expected += canakkale_mission_triggers
+            expected += canakkale_reload_triggers
             if fire_orders_poc_enabled and after[0].startswith("multiplayer_"):
                 expected += (fire_orders_poc_triggers if after[0] == "multiplayer_tdm"
-                             else [fire_orders_poc_unsupported_trigger])
+                             else fire_orders_poc_unsupported_triggers)
             self.assertEqual(after[:5], before[:5])
             self.assertEqual(after[5], expected)
     def test_no_ammo_rewrite_or_untrusted_client_command(self):
